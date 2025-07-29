@@ -7,7 +7,7 @@ A comprehensive fest and event management system for colleges and students, buil
 ### **Core Functionality**
 - **User Management**: Student, College, and Admin roles with JWT authentication
 - **Fest Management**: Create, manage, and approve fests with detailed information
-- **Event Management**: Comprehensive event system with registration, payments, and reviews
+- **Event Management**: Events can be standalone (not under any fest) or linked to a fest. The API returns both types distinctly for clarity.
 - **Payment Integration**: Razorpay payment gateway for secure transactions with direct college routing
 - **Email Notifications**: Automated email receipts and reminders
 - **Certificate Generation**: PDF certificates for event participation
@@ -179,7 +179,7 @@ This endpoint returns all registered users to help debug registration issues.
 - `PUT /api/fests/{fid}` - Update fest
 - `DELETE /api/fests/{fid}` - Delete fest
 - `POST /api/fests/{fid}/image` - Upload fest image
-- `GET /api/fests/{fid}/events` - Get fest events
+- `GET /api/fests/{fid}/events` - Get fest events (returns both fest-linked and standalone events for the college in separate lists)
 
 ### **Event Management**
 - `GET /api/events` - List events (college view)

@@ -186,7 +186,7 @@
               "mode": "formdata",
               "formdata": [
                 {
-                  "key": "file",
+                  "key": "image",
                   "type": "file",
                   "src": []
                 }
@@ -241,7 +241,8 @@
               "host": ["http://localhost:8081"],
               "path": ["api", "fests", "{{festId}}", "events"]
             }
-          }
+          },
+          "description": "Returns two lists: 'festEvents' (events under the fest) and 'standaloneEvents' (individual events not under any fest) for the same college."
         }
       ]
     },
@@ -263,8 +264,29 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"ename\": \"Hackathon 2024\",\n  \"edescription\": \"24-hour coding competition with exciting prizes\",\n  \"eventDate\": \"2024-03-16\",\n  \"fees\": 500,\n  \"location\": \"Main Auditorium\",\n  \"capacity\": 100,\n  \"teamIsAllowed\": true,\n  \"category\": \"Technical\",\n  \"mode\": \"Offline\",\n  \"festId\": 1,\n  \"cashPrize\": \"₹50,000\",\n  \"firstPrize\": \"₹25,000 + Trophy\",\n  \"secondPrize\": \"₹15,000 + Medal\",\n  \"thirdPrize\": \"₹10,000 + Certificate\",\n  \"city\": \"Mumbai\",\n  \"state\": \"Maharashtra\",\n  \"country\": \"India\",\n  \"eventWebsite\": \"https://hackathon2024.com\",\n  \"contactPhone\": \"+91-9876543210\",\n  \"organizerName\": \"Prof. John Doe\",\n  \"organizerEmail\": \"john.doe@college.edu\",\n  \"organizerPhone\": \"+91-9876543211\",\n  \"rules\": \"1. Teams of 2-4 members\\n2. 24-hour time limit\\n3. No external help allowed\\n4. Original code only\",\n  \"requirements\": \"Laptop, College ID, Basic programming knowledge\",\n  \"registrationDeadline\": \"2024-03-10\"\n}"
-            }
+              "raw": "{\n  \"ename\": \"Hackathon 2024\",\n  \"edescription\": \"24-hour coding competition with exciting prizes\",\n  \"eventDate\": \"2024-12-01\",\n  \"fees\": 500,\n  \"location\": \"Main Auditorium\",\n  \"capacity\": 100,\n  \"teamIsAllowed\": true,\n  \"category\": \"Technical\",\n  \"mode\": \"Offline\",\n  \"fid\": 1,\n  \"cashPrize\": \"₹50,000\",\n  \"firstPrize\": \"₹25,000 + Trophy\",\n  \"secondPrize\": \"₹15,000 + Medal\",\n  \"thirdPrize\": \"₹10,000 + Certificate\",\n  \"city\": \"Mumbai\",\n  \"state\": \"Maharashtra\",\n  \"country\": \"India\",\n  \"eventWebsite\": \"https://hackathon2024.com\",\n  \"contactPhone\": \"+91-9876543210\",\n  \"organizerName\": \"Prof. John Doe\",\n  \"organizerEmail\": \"john.doe@college.edu\",\n  \"organizerPhone\": \"+91-9876543211\",\n  \"rules\": \"1. Teams of 2-4 members\\n2. 24-hour time limit\\n3. No external help allowed\\n4. Original code only\",\n  \"requirements\": \"Laptop, College ID, Basic programming knowledge\",\n  \"registrationDeadline\": \"2024-11-25\"\n}"
+            },
+            "description": "Create an event under a fest by specifying 'fid'."
+          }
+        },
+        {
+          "name": "Create Standalone Event",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": {
+              "raw": "http://localhost:8081/api/events",
+              "host": ["http://localhost:8081"],
+              "path": ["api", "events"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"ename\": \"Solo Coding Challenge\",\n  \"edescription\": \"A coding contest for individuals.\",\n  \"eventDate\": \"2024-12-10\",\n  \"fees\": 100,\n  \"location\": \"Main Hall\",\n  \"capacity\": 50,\n  \"teamIsAllowed\": false,\n  \"category\": \"Technical\",\n  \"mode\": \"Offline\",\n  \"cashPrize\": \"₹10,000\",\n  \"firstPrize\": \"₹5,000\",\n  \"secondPrize\": \"₹3,000\",\n  \"thirdPrize\": \"₹2,000\",\n  \"city\": \"Mumbai\",\n  \"state\": \"Maharashtra\",\n  \"country\": \"India\",\n  \"eventWebsite\": \"https://codingchallenge.com\",\n  \"contactPhone\": \"+91-9876543210\",\n  \"organizerName\": \"Prof. Jane Doe\",\n  \"organizerEmail\": \"jane.doe@college.edu\",\n  \"organizerPhone\": \"+91-9876543211\",\n  \"rules\": \"1. Individual participation only\\n2. No plagiarism\",\n  \"requirements\": \"Laptop, College ID\",\n  \"registrationDeadline\": \"2024-12-05\"\n}"
+            },
+            "description": "Create an individual (standalone) event by omitting the 'festId' field. The event will not be linked to any fest."
           }
         },
         {
@@ -288,8 +310,9 @@
             "url": { "raw": "http://localhost:8081/api/events/{{eventId}}", "host": ["http://localhost:8081"], "path": ["api", "events", "{{eventId}}"] },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"ename\": \"Coding Challenge Updated\",\n  \"edescription\": \"Updated description\",\n  \"eventDate\": \"2024-08-02\",\n  \"fees\": 150,\n  \"location\": \"Main Hall\",\n  \"capacity\": 60,\n  \"teamIsAllowed\": false,\n  \"festId\": {{festId}}\n}"
-            }
+              "raw": "{\n  \"ename\": \"Coding Challenge Updated\",\n  \"edescription\": \"Updated description\",\n  \"eventDate\": \"2024-12-02\",\n  \"fees\": 150,\n  \"location\": \"Main Hall\",\n  \"capacity\": 60,\n  \"teamIsAllowed\": false,\n  \"fid\": {{festId}},\n  \"registrationDeadline\": \"2024-11-28\"\n}"
+            },
+            "description": "Update an event and optionally change its fest by specifying 'fid'."
           }
         },
         {
@@ -323,35 +346,8 @@
                   "src": []
                 }
               ]
-            }
-          }
-        },
-        {
-          "name": "Approve Event Poster",
-          "request": {
-            "method": "POST",
-            "header": [
-              { "key": "Authorization", "value": "Bearer {{token}}" }
-            ],
-            "url": {
-              "raw": "http://localhost:8081/api/events/{{eventId}}/poster/approve",
-              "host": ["http://localhost:8081"],
-              "path": ["api", "events", "{{eventId}}", "poster", "approve"]
-            }
-          }
-        },
-        {
-          "name": "Reject Event Poster",
-          "request": {
-            "method": "POST",
-            "header": [
-              { "key": "Authorization", "value": "Bearer {{token}}" }
-            ],
-            "url": {
-              "raw": "http://localhost:8081/api/events/{{eventId}}/poster/reject?reason=Inappropriate content",
-              "host": ["http://localhost:8081"],
-              "path": ["api", "events", "{{eventId}}", "poster", "reject"]
-            }
+            },
+            "description": "Upload a poster image for an event. The poster will be automatically approved."
           }
         },
         {
@@ -386,7 +382,8 @@
           "name": "Get Event Stats",
           "request": {
             "method": "GET",
-            "url": { "raw": "http://localhost:8081/api/events/{{eventId}}/stats", "host": ["http://localhost:8081"], "path": ["api", "events", "{{eventId}}", "stats"] }
+            "url": { "raw": "http://localhost:8081/api/events/{{eventId}}/stats", "host": ["http://localhost:8081"], "path": ["api", "events", "{{eventId}}", "stats"] },
+            "description": "Get statistics for a specific event. This is a public endpoint that does not require authentication."
           }
         },
         {
@@ -748,6 +745,21 @@
       "name": "Payment",
       "item": [
         {
+          "name": "Get All Registrations",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": {
+              "raw": "http://localhost:8081/api/payments/registrations",
+              "host": ["http://localhost:8081"],
+              "path": ["api", "payments", "registrations"]
+            },
+            "description": "Get all registrations with their details. Use this to find valid registration IDs for payment creation."
+          }
+        },
+        {
           "name": "Create Payment Order (Razorpay)",
           "request": {
             "method": "POST",
@@ -762,7 +774,8 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"registrationId\": {{registrationId}},\n  \"amount\": 500,\n  \"currency\": \"INR\",\n  \"receiptEmail\": \"student@example.com\"\n}"
+              "raw": "{\n  \"registrationId\": 1,\n  \"amount\": 500,\n  \"currency\": \"INR\",\n  \"receiptEmail\": \"student@example.com\"\n}",
+              "description": "Create a payment order. registrationId must be a valid number without leading zeros (e.g., 1, not 01)."
             }
           }
         },

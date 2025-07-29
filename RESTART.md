@@ -207,7 +207,7 @@ This endpoint returns all registered users to help debug registration issues.
 - Upload fest images with validation
 - Fest approval workflow (admin approval required)
 - Fest statistics and analytics
-- Fest-event relationship management
+- Fest-event relationship management: Events can be either linked to a fest or standalone (not under any fest). The API returns both types distinctly.
 - Fest filtering and search
 
 ### **🎯 Event Management**
@@ -801,7 +801,7 @@ java -jar target/unbound-platform-1.0.0.jar
 - `PUT /api/fests/{fid}` - Update fest
 - `DELETE /api/fests/{fid}` - Delete fest
 - `POST /api/fests/{fid}/image` - Upload fest image
-- `GET /api/fests/{fid}/events` - Get fest events
+- `GET /api/fests/{fid}/events` - Get fest events (returns both fest-linked and standalone events for the college in separate lists)
 
 ### **Event Management (College Access)**
 - `GET /api/events` - List college events

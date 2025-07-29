@@ -77,7 +77,7 @@
 | mode               | String  | Online/Offline                     |
 | posterUrl          | String  | Poster image URL                   |
 | posterThumbnailUrl | String  | Poster thumbnail URL               |
-| posterApproved     | Boolean | Poster approved by college         |
+| approved            | Boolean | Event approved by admin          |
 | (registrations)   | -       | Registration count fetched via EventRegistrationRepository |
 
 ### EventRegistration
