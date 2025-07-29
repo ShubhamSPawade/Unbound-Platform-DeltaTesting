@@ -1,0 +1,1116 @@
+{
+  "info": {
+    "_postman_id": "unbound-platform-collection-001",
+    "name": "Unbound Platform API",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "description": "API collection for Unbound Platform (College & Student Event Management)"
+  },
+  "item": [
+    {
+      "name": "Auth",
+      "item": [
+        {
+          "name": "Register (Student)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": { "raw": "http://localhost:8081/api/auth/register", "host": ["http://localhost:8081"], "path": ["api", "auth", "register"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"student1@example.com\",\n  \"password\": \"password123\",\n  \"role\": \"Student\",\n  \"sname\": \"Student One\",\n  \"collegeId\": {{collegeId}}\n}"
+            }
+          }
+        },
+        {
+          "name": "Register (College)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": { "raw": "http://localhost:8081/api/auth/register", "host": ["http://localhost:8081"], "path": ["api", "auth", "register"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"college1@example.com\",\n  \"password\": \"password123\",\n  \"role\": \"College\",\n  \"cname\": \"College One\",\n  \"cdescription\": \"A great college\",\n  \"address\": \"123 Main St\",\n  \"contactEmail\": \"contact@college1.com\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Register (Admin)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": { "raw": "http://localhost:8081/api/auth/register", "host": ["http://localhost:8081"], "path": ["api", "auth", "register"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"admin@unbound.com\",\n  \"password\": \"admin123\",\n  \"role\": \"Admin\"\n}"
+            },
+            "description": "Register an admin user. Note: Admin users don't have associated Student or College entities."
+          }
+        },
+        {
+          "name": "Login (Student/College/Admin)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": { "raw": "http://localhost:8081/api/auth/login", "host": ["http://localhost:8081"], "path": ["api", "auth", "login"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{email}}\",\n  \"password\": \"{{password}}\"\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "var jsonData = pm.response.json();",
+                  "pm.collectionVariables.set(\"token\", jsonData.token);"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Forgot Password",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": { "raw": "http://localhost:8081/api/auth/forgot-password", "host": ["http://localhost:8081"], "path": ["api", "auth", "forgot-password"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{email}}\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Reset Password",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": { "raw": "http://localhost:8081/api/auth/reset-password", "host": ["http://localhost:8081"], "path": ["api", "auth", "reset-password"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"token\": \"{{resetToken}}\",\n  \"newPassword\": \"newpassword123\"\n}"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "College Management",
+      "item": [
+        {
+          "name": "Configure College Payment Settings",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": {
+              "raw": "http://localhost:8081/api/college/payment-config",
+              "host": ["http://localhost:8081"],
+              "path": ["api", "college", "payment-config"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"razorpayAccountId\": \"acc_1234567890\",\n  \"bankAccountNumber\": \"1234567890\",\n  \"bankIfscCode\": \"SBIN0001234\",\n  \"bankAccountHolderName\": \"College Name\",\n  \"contactEmail\": \"college@example.com\"\n}"
+            },
+            "description": "Configure payment settings for the college to receive payments"
+          }
+        },
+        {
+          "name": "Get College Payment Settings",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": {
+              "raw": "http://localhost:8081/api/college/payment-config",
+              "host": ["http://localhost:8081"],
+              "path": ["api", "college", "payment-config"]
+            },
+            "description": "Get the current payment configuration for the college"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Fest Management",
+      "item": [
+        {
+          "name": "Create Fest",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": {
+              "raw": "http://localhost:8081/api/fests",
+              "host": ["http://localhost:8081"],
+              "path": ["api", "fests"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"fname\": \"TechFest 2024\",\n  \"fdescription\": \"Annual technical festival with workshops, competitions, and hackathons\",\n  \"startDate\": \"2024-03-15\",\n  \"endDate\": \"2024-03-17\",\n  \"city\": \"Mumbai\",\n  \"state\": \"Maharashtra\",\n  \"country\": \"India\",\n  \"mode\": \"Offline\",\n  \"website\": \"https://techfest2024.com\",\n  \"contactPhone\": \"+91-9876543210\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Upload Fest Image",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": {
+              "raw": "http://localhost:8081/api/fests/{{festId}}/image",
+              "host": ["http://localhost:8081"],
+              "path": ["api", "fests", "{{festId}}", "image"]
+            },
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "file",
+                  "type": "file",
+                  "src": []
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "List Fests",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": { "raw": "http://localhost:8081/api/fests", "host": ["http://localhost:8081"], "path": ["api", "fests"] }
+          }
+        },
+        {
+          "name": "Update Fest",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": { "raw": "http://localhost:8081/api/fests/{{festId}}", "host": ["http://localhost:8081"], "path": ["api", "fests", "{{festId}}"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"fname\": \"Tech Fest Updated\",\n  \"fdescription\": \"Updated description\",\n  \"startDate\": \"2024-08-01\",\n  \"endDate\": \"2024-08-04\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Delete Fest",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": { "raw": "http://localhost:8081/api/fests/{{festId}}", "host": ["http://localhost:8081"], "path": ["api", "fests", "{{festId}}"] }
+          }
+        },
+        {
+          "name": "Get Fest Events",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": {
+              "raw": "http://localhost:8081/api/fests/{{festId}}/events",
+              "host": ["http://localhost:8081"],
+              "path": ["api", "fests", "{{festId}}", "events"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Event Management",
+      "item": [
+        {
+          "name": "Create Event",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": {
+              "raw": "http://localhost:8081/api/events",
+              "host": ["http://localhost:8081"],
+              "path": ["api", "events"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"ename\": \"Hackathon 2024\",\n  \"edescription\": \"24-hour coding competition with exciting prizes\",\n  \"eventDate\": \"2024-03-16\",\n  \"fees\": 500,\n  \"location\": \"Main Auditorium\",\n  \"capacity\": 100,\n  \"teamIsAllowed\": true,\n  \"category\": \"Technical\",\n  \"mode\": \"Offline\",\n  \"festId\": 1,\n  \"cashPrize\": \"₹50,000\",\n  \"firstPrize\": \"₹25,000 + Trophy\",\n  \"secondPrize\": \"₹15,000 + Medal\",\n  \"thirdPrize\": \"₹10,000 + Certificate\",\n  \"city\": \"Mumbai\",\n  \"state\": \"Maharashtra\",\n  \"country\": \"India\",\n  \"eventWebsite\": \"https://hackathon2024.com\",\n  \"contactPhone\": \"+91-9876543210\",\n  \"organizerName\": \"Prof. John Doe\",\n  \"organizerEmail\": \"john.doe@college.edu\",\n  \"organizerPhone\": \"+91-9876543211\",\n  \"rules\": \"1. Teams of 2-4 members\\n2. 24-hour time limit\\n3. No external help allowed\\n4. Original code only\",\n  \"requirements\": \"Laptop, College ID, Basic programming knowledge\",\n  \"registrationDeadline\": \"2024-03-10\"\n}"
+            }
+          }
+        },
+        {
+          "name": "List Events",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": { "raw": "http://localhost:8081/api/events", "host": ["http://localhost:8081"], "path": ["api", "events"] }
+          }
+        },
+        {
+          "name": "Update Event",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": { "raw": "http://localhost:8081/api/events/{{eventId}}", "host": ["http://localhost:8081"], "path": ["api", "events", "{{eventId}}"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"ename\": \"Coding Challenge Updated\",\n  \"edescription\": \"Updated description\",\n  \"eventDate\": \"2024-08-02\",\n  \"fees\": 150,\n  \"location\": \"Main Hall\",\n  \"capacity\": 60,\n  \"teamIsAllowed\": false,\n  \"festId\": {{festId}}\n}"
+            }
+          }
+        },
+        {
+          "name": "Delete Event",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": { "raw": "http://localhost:8081/api/events/{{eventId}}", "host": ["http://localhost:8081"], "path": ["api", "events", "{{eventId}}"] }
+          }
+        },
+        {
+          "name": "Upload Event Poster",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": {
+              "raw": "http://localhost:8081/api/events/{{eventId}}/poster",
+              "host": ["http://localhost:8081"],
+              "path": ["api", "events", "{{eventId}}", "poster"]
+            },
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "file",
+                  "type": "file",
+                  "src": []
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Approve Event Poster",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": {
+              "raw": "http://localhost:8081/api/events/{{eventId}}/poster/approve",
+              "host": ["http://localhost:8081"],
+              "path": ["api", "events", "{{eventId}}", "poster", "approve"]
+            }
+          }
+        },
+        {
+          "name": "Reject Event Poster",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": {
+              "raw": "http://localhost:8081/api/events/{{eventId}}/poster/reject?reason=Inappropriate content",
+              "host": ["http://localhost:8081"],
+              "path": ["api", "events", "{{eventId}}", "poster", "reject"]
+            }
+          }
+        },
+        {
+          "name": "Delete Event Poster",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": {
+              "raw": "http://localhost:8081/api/events/{{eventId}}/poster",
+              "host": ["http://localhost:8081"],
+              "path": ["api", "events", "{{eventId}}", "poster"]
+            }
+          }
+        },
+        {
+          "name": "Get Event Poster Audit Logs",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": {
+              "raw": "http://localhost:8081/api/events/{{eventId}}/poster/audit-logs",
+              "host": ["http://localhost:8081"],
+              "path": ["api", "events", "{{eventId}}", "poster", "audit-logs"]
+            }
+          }
+        },
+        {
+          "name": "Get Event Stats",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "http://localhost:8081/api/events/{{eventId}}/stats", "host": ["http://localhost:8081"], "path": ["api", "events", "{{eventId}}", "stats"] }
+          }
+        },
+        {
+          "name": "Get Event Rating (Average & Count)",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "http://localhost:8081/api/events/{{eventId}}/rating",
+              "host": ["http://localhost:8081"],
+              "path": ["api", "events", "{{eventId}}", "rating"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Event Reviews",
+      "item": [
+        {
+          "name": "Submit Review (Student)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": {
+              "raw": "http://localhost:8081/api/events/{{eventId}}/review",
+              "host": ["http://localhost:8081"],
+              "path": ["api", "events", "{{eventId}}", "review"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"rating\": 5,\n  \"reviewText\": \"Great event!\"\n}"
+            }
+          }
+        },
+        {
+          "name": "View My Review (Student)",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": {
+              "raw": "http://localhost:8081/api/events/{{eventId}}/review",
+              "host": ["http://localhost:8081"],
+              "path": ["api", "events", "{{eventId}}", "review"]
+            }
+          }
+        },
+        {
+          "name": "View All Reviews (College)",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": {
+              "raw": "http://localhost:8081/api/events/{{eventId}}/reviews",
+              "host": ["http://localhost:8081"],
+              "path": ["api", "events", "{{eventId}}", "reviews"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Student Event Operations",
+      "item": [
+        {
+          "name": "Register for Event",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": {
+              "raw": "http://localhost:8081/api/student/events/register",
+              "host": ["http://localhost:8081"],
+              "path": ["api", "student", "events", "register"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"eventId\": {{eventId}},\n  \"registrationType\": \"solo\",\n  \"teamName\": null,\n  \"teamId\": null\n}"
+            }
+          }
+        },
+        {
+          "name": "Register for Event (Team)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": {
+              "raw": "http://localhost:8081/api/student/events/register",
+              "host": ["http://localhost:8081"],
+              "path": ["api", "student", "events", "register"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"eventId\": {{eventId}},\n  \"registrationType\": \"team\",\n  \"teamName\": \"Code Warriors\",\n  \"teamId\": null\n}"
+            }
+          }
+        },
+        {
+          "name": "My Registrations",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": { "raw": "http://localhost:8081/api/student/events/my", "host": ["http://localhost:8081"], "path": ["api", "student", "events", "my"] }
+          }
+        },
+        {
+          "name": "Student Dashboard Stats",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": {
+              "raw": "http://localhost:8081/api/student/events/dashboard/stats",
+              "host": ["http://localhost:8081"],
+              "path": ["api", "student", "events", "dashboard", "stats"]
+            }
+          }
+        },
+        {
+          "name": "Download Event Certificate",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": {
+              "raw": "http://localhost:8081/api/student/events/{{eventId}}/certificate",
+              "host": ["http://localhost:8081"],
+              "path": ["api", "student", "events", "{{eventId}}", "certificate"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Team Management",
+      "item": [
+        {
+          "name": "View Teams for Event",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": { "raw": "http://localhost:8081/api/student/teams/event/{{eventId}}", "host": ["http://localhost:8081"], "path": ["api", "student", "teams", "event", "{{eventId}}"] }
+          }
+        },
+        {
+          "name": "My Teams",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": { "raw": "http://localhost:8081/api/student/teams/my", "host": ["http://localhost:8081"], "path": ["api", "student", "teams", "my"] }
+          }
+        },
+        {
+          "name": "View Team Members",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": { "raw": "http://localhost:8081/api/student/teams/{{teamId}}/members", "host": ["http://localhost:8081"], "path": ["api", "student", "teams", "{{teamId}}", "members"] }
+          }
+        },
+        {
+          "name": "Leave Team",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": { "raw": "http://localhost:8081/api/student/teams/{{teamId}}/leave", "host": ["http://localhost:8081"], "path": ["api", "student", "teams", "{{teamId}}", "leave"] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "College Dashboard",
+      "item": [
+        {
+          "name": "College Dashboard Stats",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": {
+              "raw": "http://localhost:8081/api/college/dashboard/stats",
+              "host": ["http://localhost:8081"],
+              "path": ["api", "college", "dashboard", "stats"]
+            }
+          }
+        },
+        {
+          "name": "College Event List with Stats",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": {
+              "raw": "http://localhost:8081/api/college/dashboard/events",
+              "host": ["http://localhost:8081"],
+              "path": ["api", "college", "dashboard", "events"]
+            }
+          }
+        },
+        {
+          "name": "College Dashboard Earnings",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": {
+              "raw": "http://localhost:8081/api/college/dashboard/earnings",
+              "host": ["http://localhost:8081"],
+              "path": ["api", "college", "dashboard", "earnings"]
+            }
+          }
+        },
+        {
+          "name": "College Dashboard Registrations",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": {
+              "raw": "http://localhost:8081/api/college/dashboard/registrations",
+              "host": ["http://localhost:8081"],
+              "path": ["api", "college", "dashboard", "registrations"]
+            }
+          }
+        },
+        {
+          "name": "College Analytics by Fest",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": {
+              "raw": "http://localhost:8081/api/college/dashboard/analytics/by-fest",
+              "host": ["http://localhost:8081"],
+              "path": ["api", "college", "dashboard", "analytics", "by-fest"]
+            }
+          }
+        },
+        {
+          "name": "College Analytics by Date",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": {
+              "raw": "http://localhost:8081/api/college/dashboard/analytics/by-date",
+              "host": ["http://localhost:8081"],
+              "path": ["api", "college", "dashboard", "analytics", "by-date"]
+            }
+          }
+        },
+        {
+          "name": "College Top Events",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": {
+              "raw": "http://localhost:8081/api/college/dashboard/analytics/top-events",
+              "host": ["http://localhost:8081"],
+              "path": ["api", "college", "dashboard", "analytics", "top-events"]
+            }
+          }
+        },
+        {
+          "name": "Event Registrations (with Payment Status)",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": {
+              "raw": "http://localhost:8081/api/college/dashboard/events/{{eventId}}/registrations",
+              "host": ["http://localhost:8081"],
+              "path": ["api", "college", "dashboard", "events", "{{eventId}}", "registrations"]
+            }
+          }
+        },
+        {
+          "name": "Approve Certificate",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": {
+              "raw": "http://localhost:8081/api/college/dashboard/events/{{eventId}}/registrations/{{registrationId}}/approve-certificate",
+              "host": ["http://localhost:8081"],
+              "path": ["api", "college", "dashboard", "events", "{{eventId}}", "registrations", "{{registrationId}}", "approve-certificate"]
+            }
+          }
+        },
+        {
+          "name": "Approve All Certificates",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": {
+              "raw": "http://localhost:8081/api/college/dashboard/events/{{eventId}}/registrations/approve-all-certificates",
+              "host": ["http://localhost:8081"],
+              "path": ["api", "college", "dashboard", "events", "{{eventId}}", "registrations", "approve-all-certificates"]
+            }
+          }
+        },
+        {
+          "name": "Approve Certificates for List",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": {
+              "raw": "http://localhost:8081/api/college/dashboard/events/{{eventId}}/registrations/approve-certificates",
+              "host": ["http://localhost:8081"],
+              "path": ["api", "college", "dashboard", "events", "{{eventId}}", "registrations", "approve-certificates"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"registrationIds\": [1, 2, 3]\n}"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Payment",
+      "item": [
+        {
+          "name": "Create Payment Order (Razorpay)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": {
+              "raw": "http://localhost:8081/api/payments/create-order",
+              "host": ["http://localhost:8081"],
+              "path": ["api", "payments", "create-order"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"registrationId\": {{registrationId}},\n  \"amount\": 500,\n  \"currency\": \"INR\",\n  \"receiptEmail\": \"student@example.com\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Verify Payment (Simulate Success)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": {
+              "raw": "http://localhost:8081/api/payments/verify",
+              "host": ["http://localhost:8081"],
+              "path": ["api", "payments", "verify"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"razorpayOrderId\": \"order_xxx\",\n  \"status\": \"paid\",\n  \"paymentId\": \"pay_xxx\"\n}"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Admin Management",
+      "item": [
+        {
+          "name": "Get Pending Fests",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": {
+              "raw": "http://localhost:8081/api/admin/fests/pending",
+              "host": ["http://localhost:8081"],
+              "path": ["api", "admin", "fests", "pending"]
+            }
+          }
+        },
+        {
+          "name": "Get Pending Events",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": {
+              "raw": "http://localhost:8081/api/admin/events/pending",
+              "host": ["http://localhost:8081"],
+              "path": ["api", "admin", "events", "pending"]
+            }
+          }
+        },
+        {
+          "name": "Approve Fest",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": {
+              "raw": "http://localhost:8081/api/admin/fests/{{festId}}/approve",
+              "host": ["http://localhost:8081"],
+              "path": ["api", "admin", "fests", "{{festId}}", "approve"]
+            }
+          }
+        },
+        {
+          "name": "Reject Fest",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": {
+              "raw": "http://localhost:8081/api/admin/fests/{{festId}}/reject",
+              "host": ["http://localhost:8081"],
+              "path": ["api", "admin", "fests", "{{festId}}", "reject"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"reason\": \"Fest content violates platform guidelines\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Approve Event",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": {
+              "raw": "http://localhost:8081/api/admin/events/{{eventId}}/approve",
+              "host": ["http://localhost:8081"],
+              "path": ["api", "admin", "events", "{{eventId}}", "approve"]
+            }
+          }
+        },
+        {
+          "name": "Reject Event",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": {
+              "raw": "http://localhost:8081/api/admin/events/{{eventId}}/reject",
+              "host": ["http://localhost:8081"],
+              "path": ["api", "admin", "events", "{{eventId}}", "reject"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"reason\": \"Event content violates platform guidelines\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Admin Dashboard Stats",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": {
+              "raw": "http://localhost:8081/api/admin/dashboard/stats",
+              "host": ["http://localhost:8081"],
+              "path": ["api", "admin", "dashboard", "stats"]
+            }
+          }
+        },
+        {
+          "name": "Get All Colleges",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": {
+              "raw": "http://localhost:8081/api/admin/colleges",
+              "host": ["http://localhost:8081"],
+              "path": ["api", "admin", "colleges"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Public Exploration",
+      "item": [
+        {
+          "name": "Explore Fests (Public)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:8081/api/explore/fests?name=tech&city=Mumbai&mode=Online",
+              "host": ["http://localhost:8081"],
+              "path": ["api", "explore", "fests"],
+              "query": [
+                {
+                  "key": "name",
+                  "value": "tech",
+                  "description": "Filter by fest name"
+                },
+                {
+                  "key": "city",
+                  "value": "Mumbai",
+                  "description": "Filter by city"
+                },
+                {
+                  "key": "mode",
+                  "value": "Online",
+                  "description": "Filter by mode (Online/Offline/Hybrid)"
+                }
+              ]
+            },
+            "description": "Public access to explore fests without authentication. Supports various filters."
+          }
+        },
+        {
+          "name": "Explore Events (Public)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:8081/api/explore/events?category=Technical&minFee=0&maxFee=500&teamAllowed=true",
+              "host": ["http://localhost:8081"],
+              "path": ["api", "explore", "events"],
+              "query": [
+                {
+                  "key": "category",
+                  "value": "Technical",
+                  "description": "Filter by event category"
+                },
+                {
+                  "key": "minFee",
+                  "value": "0",
+                  "description": "Minimum entry fee"
+                },
+                {
+                  "key": "maxFee",
+                  "value": "500",
+                  "description": "Maximum entry fee"
+                },
+                {
+                  "key": "teamAllowed",
+                  "value": "true",
+                  "description": "Filter by team participation"
+                }
+              ]
+            },
+            "description": "Public access to explore events without authentication. Supports comprehensive filtering."
+          }
+        },
+        {
+          "name": "Get Explore Stats (Public)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:8081/api/explore/stats",
+              "host": ["http://localhost:8081"],
+              "path": ["api", "explore", "stats"]
+            },
+            "description": "Get public statistics about fests, events, and colleges"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Health Check",
+      "item": [
+        {
+          "name": "Health Check",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:8081/api/health",
+              "host": ["http://localhost:8081"],
+              "path": ["api", "health"]
+            },
+            "description": "Comprehensive health check including database connectivity and system status"
+          }
+        },
+        {
+          "name": "Ping",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:8081/api/health/ping",
+              "host": ["http://localhost:8081"],
+              "path": ["api", "health", "ping"]
+            },
+            "description": "Simple ping endpoint for basic connectivity check"
+          }
+        },
+        {
+          "name": "Test",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:8081/api/health/test",
+              "host": ["http://localhost:8081"],
+              "path": ["api", "health", "test"]
+            },
+            "description": "Test endpoint to verify application is working"
+          }
+        },
+        {
+          "name": "Swagger Test",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:8081/api/health/swagger-test",
+              "host": ["http://localhost:8081"],
+              "path": ["api", "health", "swagger-test"]
+            },
+            "description": "Test endpoint to verify Swagger is working"
+          }
+        },
+        {
+          "name": "Debug",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:8081/api/health/debug",
+              "host": ["http://localhost:8081"],
+              "path": ["api", "health", "debug"]
+            },
+            "description": "Debug endpoint to check request details"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Test",
+      "item": [
+        {
+          "name": "Protected Endpoint Test",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": {
+              "raw": "http://localhost:8081/api/protected",
+              "host": ["http://localhost:8081"],
+              "path": ["api", "protected"]
+            },
+            "description": "Test protected endpoint to verify authentication"
+          }
+        },
+        {
+          "name": "Get All Users",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:8081/api/users",
+              "host": ["http://localhost:8081"],
+              "path": ["api", "users"]
+            },
+            "description": "Get all users in the database to check existing registrations"
+          }
+        }
+      ]
+    }
+  ],
+  "variable": [
+    { "key": "token", "value": "" },
+    { "key": "email", "value": "" },
+    { "key": "password", "value": "" },
+    { "key": "festId", "value": "" },
+    { "key": "eventId", "value": "" },
+    { "key": "teamId", "value": "" },
+    { "key": "studentId1", "value": "" },
+    { "key": "studentId2", "value": "" },
+    { "key": "collegeId", "value": "" },
+    { "key": "registrationId", "value": "" },
+    { "key": "resetToken", "value": "" }
+  ]
+} 
