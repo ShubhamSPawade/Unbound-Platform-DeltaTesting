@@ -220,8 +220,9 @@ This endpoint returns all registered users to help debug registration issues.
 - `GET /api/admin/colleges` - Get all colleges
 
 ### **Payment & Team Management**
-- `POST /api/payments/create-order` - Create payment order
-- `POST /api/payments/verify` - Verify payment
+- `GET /api/payments/registrations` - Get all registrations with details (for finding valid registration IDs)
+- `POST /api/payments/create-order` - Create payment order for a specific registration
+- `POST /api/payments/verify` - Verify payment (typically called by Razorpay webhook)
 - `POST /api/teams` - Create team
 - `GET /api/teams` - List teams
 - `PUT /api/teams/{tid}` - Update team
@@ -239,6 +240,12 @@ This endpoint returns all registered users to help debug registration issues.
 3. **Payment Processing**: Razorpay processes the payment
 4. **Direct Transfer**: Money goes directly to college's bank account
 5. **Notifications**: Both student and college receive email confirmations
+
+### **Payment Debugging & Error Handling**
+- **Registration Validation**: Use `GET /api/payments/registrations` to see all available registrations
+- **Error Messages**: Clear, user-friendly error messages for invalid registration IDs
+- **Available Registrations**: When a registration is not found, the API returns a list of all available registrations
+- **JSON Validation**: Proper error handling for invalid JSON requests (e.g., leading zeros in numbers)
 
 ### **College Payment Configuration**
 Colleges must set up their payment details to receive payments:

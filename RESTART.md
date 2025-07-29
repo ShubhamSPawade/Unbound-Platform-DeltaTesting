@@ -235,6 +235,9 @@ This endpoint returns all registered users to help debug registration issues.
 - Payment analytics for colleges with detailed tracking
 - Automatic payment routing to college's bank account
 - College payment setup and management
+- **Payment Debugging**: Get all registrations to find valid registration IDs
+- **Error Handling**: Clear error messages for invalid registration IDs with available options
+- **JSON Validation**: Proper handling of invalid JSON requests (e.g., leading zeros in numbers)
 
 ### **📧 Email System**
 - Registration confirmation emails with detailed receipts
@@ -253,6 +256,9 @@ This endpoint returns all registered users to help debug registration issues.
 - **Secure Processing**: All payments processed through Razorpay's secure gateway
 - **Payment Configuration**: Colleges can set up and manage their payment receiving details
 - **Payment Tracking**: Complete audit trail for all payment transactions
+- **Payment Debugging**: Get all registrations to find valid registration IDs for payments
+- **Error Handling**: Clear error messages with available registration options
+- **JSON Validation**: Proper handling of invalid JSON requests (e.g., leading zeros in numbers)
 
 ### **📄 Certificate System**
 - PDF certificate generation for event participation
@@ -846,8 +852,9 @@ java -jar target/unbound-platform-1.0.0.jar
 - `GET /api/admin/colleges` - Get all colleges
 
 ### **Payment & Team Management**
-- `POST /api/payments/create-order` - Create payment order
-- `POST /api/payments/verify` - Verify payment
+- `GET /api/payments/registrations` - Get all registrations with details (for finding valid registration IDs)
+- `POST /api/payments/create-order` - Create payment order for a specific registration
+- `POST /api/payments/verify` - Verify payment (typically called by Razorpay webhook)
 - `POST /api/teams` - Create team
 - `GET /api/teams` - List teams
 - `PUT /api/teams/{tid}` - Update team

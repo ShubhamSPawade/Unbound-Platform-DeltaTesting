@@ -756,7 +756,7 @@
               "host": ["http://localhost:8081"],
               "path": ["api", "payments", "registrations"]
             },
-            "description": "Get all registrations with their details. Use this to find valid registration IDs for payment creation."
+            "description": "Get all registrations with their details. Use this to find valid registration IDs for payment creation. Returns registration ID, event name, student info, payment status, and fees."
           }
         },
         {
@@ -775,7 +775,7 @@
             "body": {
               "mode": "raw",
               "raw": "{\n  \"registrationId\": 1,\n  \"amount\": 500,\n  \"currency\": \"INR\",\n  \"receiptEmail\": \"student@example.com\"\n}",
-              "description": "Create a payment order. registrationId must be a valid number without leading zeros (e.g., 1, not 01)."
+              "description": "Create a payment order for a specific registration. registrationId must be a valid number without leading zeros (e.g., 1, not 01). Use the 'Get All Registrations' endpoint to find valid registration IDs. The payment will be routed directly to the college's bank account."
             }
           }
         },
@@ -793,7 +793,8 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"razorpayOrderId\": \"order_xxx\",\n  \"status\": \"paid\",\n  \"paymentId\": \"pay_xxx\"\n}"
+              "raw": "{\n  \"razorpayOrderId\": \"order_xxx\",\n  \"status\": \"paid\",\n  \"paymentId\": \"pay_xxx\"\n}",
+              "description": "Verify a completed payment. This endpoint is typically called by Razorpay webhook after successful payment processing."
             }
           }
         }
