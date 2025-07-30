@@ -19,6 +19,7 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 
 import org.springframework.web.servlet.config.annotation.CorsRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
+import org.springframework.web.cors.CorsConfigurationSource;
 
 
 @Configuration
@@ -56,10 +57,12 @@ public class SecurityConfig {
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
             .csrf(csrf -> csrf.disable())
+            .cors(cors -> cors.configurationSource(corsConfigurationSource()))
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers("/api/auth/**").permitAll()
                 .requestMatchers("/api/health/**").permitAll()
                 .requestMatchers("/api/explore/**").permitAll() // Public access for exploring
+                .requestMatchers("/api/users").permitAll() // Public access for debugging
                 .requestMatchers("/uploads/**").permitAll() // Public access to uploaded images
                 .requestMatchers("/swagger-ui/**", "/v3/api-docs/**", "/webjars/**", "/swagger-ui.html").permitAll()
                 .requestMatchers("/favicon.ico", "/error").permitAll() // Allow favicon and error pages
@@ -73,20 +76,7 @@ public class SecurityConfig {
     }
 
     @Bean
-    public WebMvcConfigurer corsConfigurer() {
-        return new WebMvcConfigurer() {
-            @Override
-            public void addCorsMappings(CorsRegistry registry) {
-                // registry.addMapping("/**")
-                //         .allowedOrigins("http://localhost:3000")  // or your frontend URL
-                //         .allowedMethods("*")
-                //         .allowedHeaders("*")
-                //         .allowCredentials(true);
-                registry.addMapping("/**")
-                    .allowedOrigins("*")       // Allow all origins
-                    .allowedMethods("*")       // Allow all HTTP methods (GET, POST, etc.)
-                    .allowedHeaders("*");      // Allow all headers
-            }
-        };
+    public CorsConfigurationSource corsConfigurationSource() {
+        return new CorsConfig().corsConfigurationSource();
     }
 } 
