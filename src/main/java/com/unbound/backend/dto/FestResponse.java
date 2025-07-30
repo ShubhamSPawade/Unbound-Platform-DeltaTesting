@@ -10,7 +10,7 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @NoArgsConstructor
 public class FestResponse {
-    private Integer fid;
+    private Long fid;
     private String fname;
     private String fdescription;
     private String startDate;
@@ -27,6 +27,6 @@ public class FestResponse {
     private String contactPhone;
     private String collegeName;
     private String collegeEmail;
-    private Integer eventCount; // Number of events in this fest
-    private Integer registrationCount; // Total registrations across all events
+    private Long eventCount; // Number of events in this fest
+    private Long registrationCount; // Total registrations across all events
 } 

@@ -10,6 +10,8 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.util.UUID;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 @Service
 public class FileStorageService {
@@ -17,6 +19,8 @@ public class FileStorageService {
     private static final String UPLOAD_DIR = "uploads/";
     private static final String FEST_IMAGES_DIR = UPLOAD_DIR + "fests/";
     private static final String EVENT_POSTERS_DIR = UPLOAD_DIR + "events/";
+    
+    private static final Logger logger = LoggerFactory.getLogger(FileStorageService.class);
     
     public FileStorageService() {
         // Create upload directories if they don't exist

@@ -12,7 +12,7 @@ import jakarta.persistence.*;
 public class College {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Integer cid;
+    private Long cid;
 
     @OneToOne
     @JoinColumn(name = "uid", referencedColumnName = "uid", nullable = false, unique = true)

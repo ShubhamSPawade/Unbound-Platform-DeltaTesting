@@ -12,7 +12,7 @@ import jakarta.persistence.*;
 public class Event {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Integer eid;
+    private Long eid;
 
     @ManyToOne
     @JoinColumn(name = "cid", referencedColumnName = "cid", nullable = false)
@@ -53,9 +53,6 @@ public class Event {
 
     @Column(length = 255)
     private String posterThumbnailUrl; // URL or path to event poster thumbnail
-
-    @Column(nullable = false)
-    private boolean posterApproved = false;
 
     @Column(nullable = false)
     private boolean approved = false;

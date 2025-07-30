@@ -12,7 +12,7 @@ import jakarta.persistence.*;
 public class EventReview {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Integer id;
+    private Long reviewId;
 
     @ManyToOne
     @JoinColumn(name = "event_id", referencedColumnName = "eid", nullable = false)

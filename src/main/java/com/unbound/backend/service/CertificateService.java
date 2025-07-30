@@ -5,10 +5,15 @@ import com.lowagie.text.pdf.PdfWriter;
 import org.springframework.stereotype.Service;
 import java.io.ByteArrayOutputStream;
 import java.time.LocalDate;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 @Service
 public class CertificateService {
-    public byte[] generateCertificate(String studentName, String eventName, String festName, String eventDate) throws Exception {
+    private static final Logger logger = LoggerFactory.getLogger(CertificateService.class);
+
+    public byte[] generateCertificate(String studentName, String eventName, String festName, String eventDate) {
+        logger.info("[CERTIFICATE] Generating certificate for student: {}, event: {}, fest: {}", studentName, eventName, festName);
         Document document = new Document(PageSize.A4);
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
         PdfWriter.getInstance(document, baos);
@@ -27,6 +32,7 @@ public class CertificateService {
         document.add(new Paragraph(" "));
         document.add(new Paragraph("Unbound Platform", new Font(Font.HELVETICA, 14, Font.BOLD)));
         document.close();
+        logger.info("[CERTIFICATE] Certificate generated for student: {}, event: {}", studentName, eventName);
         return baos.toByteArray();
     }
 } 

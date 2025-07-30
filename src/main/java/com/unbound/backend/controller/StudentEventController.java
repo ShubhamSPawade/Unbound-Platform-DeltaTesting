@@ -22,6 +22,11 @@ import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
 import java.util.*;
+import jakarta.persistence.EntityNotFoundException;
+import com.unbound.backend.exception.RegistrationClosedException;
+import com.unbound.backend.exception.StudentNotFoundException;
+import com.unbound.backend.exception.EventNotFoundException;
+import com.unbound.backend.exception.ForbiddenActionException;
 
 @RestController
 @RequestMapping("/api/student/events")
@@ -63,49 +68,49 @@ public class StudentEventController {
     })
     public ResponseEntity<?> registerForEvent(@AuthenticationPrincipal User user, @RequestBody EventRegistrationRequest req) {
         if (user == null || user.getRole() != User.Role.Student) {
-            return ResponseEntity.status(403).body(Map.of("error", "Only students can register for events"));
+            throw new ForbiddenActionException("Only students can register for events.");
         }
         Student student = getStudentForUser(user);
-        if (student == null) return ResponseEntity.status(404).body(Map.of("error", "Student not found"));
-        Optional<Event> eventOpt = eventRepository.findById(req.getEventId());
-        if (eventOpt.isEmpty()) return ResponseEntity.status(404).body(Map.of("error", "Event not found"));
-        Event event = eventOpt.get();
+        if (student == null) throw new StudentNotFoundException("Student not found.");
+        Long eventId = req.getEventId();
+        Event event = eventRepository.findById(eventId).orElseThrow(() -> new EventNotFoundException("Event not found"));
         
         // Check if event is approved and active
         if (!event.isApproved() || !event.isActive()) {
-            return ResponseEntity.badRequest().body(Map.of("error", "Event is not available for registration"));
+            throw new EventNotFoundException("Event is not available for registration.");
         }
         
         // Check if registration is open
-        if (!event.isRegistrationOpen()) {
-            return ResponseEntity.badRequest().body(Map.of("error", "Registration for this event is closed"));
+        boolean registrationClosed = !event.isRegistrationOpen();
+        if (registrationClosed) {
+            throw new RegistrationClosedException("Registration for this event is closed.");
         }
         
         // Check registration deadline
         try {
             LocalDate deadline = LocalDate.parse(event.getRegistrationDeadline());
             if (LocalDate.now().isAfter(deadline)) {
-                return ResponseEntity.badRequest().body(Map.of("error", "Registration deadline has passed"));
+                throw new RegistrationClosedException("Registration deadline has passed.");
             }
         } catch (Exception e) {
-            return ResponseEntity.badRequest().body(Map.of("error", "Invalid registration deadline"));
+            throw new RegistrationClosedException("Invalid registration deadline.");
         }
         
         // Check for duplicate registration
         if (eventRegistrationRepository.findByEventAndStudent(event, student).isPresent()) {
-            return ResponseEntity.badRequest().body(Map.of("error", "Already registered for this event"));
+            throw new RegistrationClosedException("Already registered for this event.");
         }
         
         // Check event capacity
         long regCount = eventRegistrationRepository.findByEvent(event).stream().count();
         if (regCount >= event.getCapacity()) {
-            return ResponseEntity.badRequest().body(Map.of("error", "Event is full"));
+            throw new RegistrationClosedException("Event is full.");
         }
         
         // Solo registration
         if ("solo".equalsIgnoreCase(req.getRegistrationType())) {
             if (event.getTeamIsAllowed()) {
-                return ResponseEntity.badRequest().body(Map.of("error", "This event requires team registration"));
+                throw new EntityNotFoundException("This event requires team registration.");
             }
             EventRegistration registration = EventRegistration.builder()
                     .event(event)
@@ -163,17 +168,18 @@ public class StudentEventController {
         // Team registration
         if ("team".equalsIgnoreCase(req.getRegistrationType())) {
             if (!event.getTeamIsAllowed()) {
-                return ResponseEntity.badRequest().body(Map.of("error", "This event does not allow team registration"));
+                throw new EntityNotFoundException("This event does not allow team registration.");
             }
             Team team = null;
             // Join existing team
             if (req.getTeamId() != null) {
-                Optional<Team> teamOpt = teamRepository.findById(req.getTeamId());
-                if (teamOpt.isEmpty()) return ResponseEntity.badRequest().body(Map.of("error", "Team not found"));
+                Long teamId = req.getTeamId();
+                Optional<Team> teamOpt = teamRepository.findById(teamId);
+                if (teamOpt.isEmpty()) throw new EntityNotFoundException("Team not found.");
                 team = teamOpt.get();
                 // Check if already a member
                 if (teamMembersRepository.findByTeamAndStudent(team, student).isPresent()) {
-                    return ResponseEntity.badRequest().body(Map.of("error", "Already a member of this team"));
+                    throw new EntityNotFoundException("Already a member of this team.");
                 }
                 // Add to team
                 TeamMembers teamMember = TeamMembers.builder()
@@ -251,7 +257,7 @@ public class StudentEventController {
             return ResponseEntity.ok(response);
         }
         
-        return ResponseEntity.badRequest().body(Map.of("error", "Invalid registration type"));
+        throw new EntityNotFoundException("Invalid registration type.");
     }
 
     private String generateRegistrationEmailBody(Student student, Event event, EventRegistration registration, String receiptNumber, String registrationType, Team team) {
@@ -347,10 +353,10 @@ public class StudentEventController {
     })
     public ResponseEntity<?> myRegistrations(@AuthenticationPrincipal User user) {
         if (user == null || user.getRole() != User.Role.Student) {
-            return ResponseEntity.status(403).body(Map.of("error", "Only students can view their registrations"));
+            throw new EntityNotFoundException("Only students can view their registrations.");
         }
         Student student = getStudentForUser(user);
-        if (student == null) return ResponseEntity.status(404).body(Map.of("error", "Student not found"));
+        if (student == null) throw new EntityNotFoundException("Student not found.");
         return ResponseEntity.ok(studentDashboardService.getMyRegistrations(student));
     }
 
@@ -363,10 +369,10 @@ public class StudentEventController {
     })
     public ResponseEntity<?> getStudentDashboardStats(@AuthenticationPrincipal User user) {
         if (user == null || user.getRole() != User.Role.Student) {
-            return ResponseEntity.status(403).body(Map.of("error", "Only students can view dashboard stats"));
+            throw new EntityNotFoundException("Only students can view dashboard stats.");
         }
         Student student = getStudentForUser(user);
-        if (student == null) return ResponseEntity.status(404).body(Map.of("error", "Student not found"));
+        if (student == null) throw new EntityNotFoundException("Student not found.");
         return ResponseEntity.ok(studentDashboardService.getStudentDashboardStats(student));
     }
 
@@ -377,29 +383,27 @@ public class StudentEventController {
         @ApiResponse(responseCode = "403", description = "Only students can download certificates or not a registered and paid participant"),
         @ApiResponse(responseCode = "404", description = "Event or Student not found")
     })
-    public ResponseEntity<?> downloadCertificate(@AuthenticationPrincipal User user, @PathVariable Integer eventId) {
+    public ResponseEntity<?> downloadCertificate(@AuthenticationPrincipal User user, @PathVariable("eventId") Long eventId) {
         if (user == null || user.getRole() != User.Role.Student) {
-            return ResponseEntity.status(403).body(Map.of("error", "Only students can download certificates"));
+            throw new EntityNotFoundException("Only students can download certificates.");
         }
         Student student = getStudentForUser(user);
-        if (student == null) return ResponseEntity.status(404).body(Map.of("error", "Student not found"));
-        Optional<Event> eventOpt = eventRepository.findById(eventId);
-        if (eventOpt.isEmpty()) return ResponseEntity.status(404).body(Map.of("error", "Event not found"));
-        Event event = eventOpt.get();
+        if (student == null) throw new EntityNotFoundException("Student not found.");
+        Event event = eventRepository.findById(eventId).orElseThrow(() -> new RuntimeException("Event not found"));
         Optional<EventRegistration> regOpt = eventRegistrationRepository.findByEventAndStudent(event, student);
         if (regOpt.isEmpty() || (!"paid".equalsIgnoreCase(regOpt.get().getPaymentStatus()) && event.getFees() > 0)) {
-            return ResponseEntity.status(403).body(Map.of("error", "You must be a registered and paid participant to download certificate"));
+            throw new EntityNotFoundException("You must be a registered and paid participant to download certificate.");
         }
         if (!regOpt.get().isCertificateApproved()) {
-            return ResponseEntity.status(403).body(Map.of("error", "Certificate not yet approved by college"));
+            throw new EntityNotFoundException("Certificate not yet approved by college.");
         }
         // Only after event is completed
         try {
             if (!java.time.LocalDate.now().isAfter(java.time.LocalDate.parse(event.getEventDate()))) {
-                return ResponseEntity.status(403).body(Map.of("error", "Certificate available only after event completion"));
+                throw new EntityNotFoundException("Certificate available only after event completion.");
             }
         } catch (Exception e) {
-            throw new RuntimeException("Invalid event date for event ID " + eventId + ": " + e.getMessage());
+            throw new EntityNotFoundException("Invalid event date for event ID " + eventId + ": " + e.getMessage());
         }
         try {
             byte[] pdf = certificateService.generateCertificate(
@@ -413,7 +417,7 @@ public class StudentEventController {
                 .header("Content-Disposition", "attachment; filename=certificate.pdf")
                 .body(pdf);
         } catch (Exception e) {
-            throw new RuntimeException("Failed to generate certificate for student ID " + student.getSid() + ", event ID " + eventId + ": " + e.getMessage());
+            throw new EntityNotFoundException("Failed to generate certificate for student ID " + student.getSid() + ", event ID " + eventId + ": " + e.getMessage());
         }
     }
 } 

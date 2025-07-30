@@ -11,6 +11,10 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
+import com.unbound.backend.exception.StudentNotFoundException;
+import com.unbound.backend.exception.EventNotFoundException;
+import com.unbound.backend.exception.ForbiddenActionException;
+import com.unbound.backend.exception.RegistrationClosedException;
 
 @RestController
 @RequestMapping("/api/events")
@@ -34,33 +38,33 @@ public class EventReviewController {
 
     // Student submits a review (only after event is completed and registered)
     @PostMapping("/{eventId}/review")
-    public ResponseEntity<?> submitReview(@AuthenticationPrincipal User user, @PathVariable Integer eventId, @RequestBody Map<String, Object> req) {
+    public ResponseEntity<?> submitReview(@AuthenticationPrincipal User user, @PathVariable Long eventId, @RequestBody Map<String, Object> req) {
         if (user == null || user.getRole() != User.Role.Student) {
-            return ResponseEntity.status(403).body(Map.of("error", "Only students can submit reviews"));
+            throw new ForbiddenActionException("Only students can submit reviews");
         }
         Student student = getStudentForUser(user);
-        if (student == null) return ResponseEntity.status(404).body(Map.of("error", "Student not found"));
+        if (student == null) throw new StudentNotFoundException("Student not found");
         Event event = eventRepository.findById(eventId).orElse(null);
-        if (event == null) return ResponseEntity.status(404).body(Map.of("error", "Event not found"));
+        if (event == null) throw new EventNotFoundException("Event not found");
         // Check event is completed
         LocalDate today = LocalDate.now();
         LocalDate eventDate = LocalDate.parse(event.getEventDate());
         if (today.isBefore(eventDate)) {
-            return ResponseEntity.badRequest().body(Map.of("error", "You can only review after the event is completed"));
+            throw new RegistrationClosedException("You can only review after the event is completed");
         }
         // Check registration
         Optional<EventRegistration> regOpt = eventRegistrationRepository.findByEventAndStudent(event, student);
         if (regOpt.isEmpty() || (!"paid".equalsIgnoreCase(regOpt.get().getPaymentStatus()) && event.getFees() > 0)) {
-            return ResponseEntity.badRequest().body(Map.of("error", "You must be a registered and paid participant to review"));
+            throw new RegistrationClosedException("You must be a registered and paid participant to review");
         }
         // One review per student per event
         if (eventReviewRepository.findByEventAndStudent(event, student).isPresent()) {
-            return ResponseEntity.badRequest().body(Map.of("error", "You have already reviewed this event"));
+            throw new RegistrationClosedException("You have already reviewed this event");
         }
         Integer rating = (Integer) req.get("rating");
         String reviewText = (String) req.getOrDefault("reviewText", "");
         if (rating == null || rating < 1 || rating > 5) {
-            return ResponseEntity.badRequest().body(Map.of("error", "Rating must be between 1 and 5"));
+            throw new RegistrationClosedException("Rating must be between 1 and 5");
         }
         EventReview review = EventReview.builder()
                 .event(event)
@@ -75,7 +79,7 @@ public class EventReviewController {
 
     // Student views their review for an event
     @GetMapping("/{eventId}/review")
-    public ResponseEntity<?> getMyReview(@AuthenticationPrincipal User user, @PathVariable Integer eventId) {
+    public ResponseEntity<?> getMyReview(@AuthenticationPrincipal User user, @PathVariable Long eventId) {
         if (user == null || user.getRole() != User.Role.Student) {
             return ResponseEntity.status(403).body(Map.of("error", "Only students can view their review"));
         }
@@ -90,7 +94,7 @@ public class EventReviewController {
 
     // College views all reviews for an event
     @GetMapping("/{eventId}/reviews")
-    public ResponseEntity<?> getEventReviews(@AuthenticationPrincipal User user, @PathVariable Integer eventId) {
+    public ResponseEntity<?> getEventReviews(@AuthenticationPrincipal User user, @PathVariable Long eventId) {
         if (user == null || user.getRole() != User.Role.College) {
             return ResponseEntity.status(403).body(Map.of("error", "Only colleges can view reviews"));
         }
@@ -108,7 +112,7 @@ public class EventReviewController {
 
     // Get average rating and review count for an event
     @GetMapping("/{eventId}/rating")
-    public ResponseEntity<?> getEventRating(@PathVariable Integer eventId) {
+    public ResponseEntity<?> getEventRating(@PathVariable Long eventId) {
         Event event = eventRepository.findById(eventId).orElse(null);
         if (event == null) return ResponseEntity.status(404).body(Map.of("error", "Event not found"));
         List<EventReview> reviews = eventReviewRepository.findByEvent(event);

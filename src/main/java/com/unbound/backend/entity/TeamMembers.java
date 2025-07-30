@@ -26,7 +26,7 @@ public class TeamMembers {
     @NoArgsConstructor
     @AllArgsConstructor
     public static class TeamMemberId implements Serializable {
-        private Integer team;
-        private Integer student;
+        private Long team;
+        private Long student;
     }
 } 

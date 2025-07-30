@@ -7,19 +7,18 @@ import jakarta.validation.constraints.NotBlank;
 @Data
 public class CollegePaymentConfigRequest {
     
-    @NotBlank(message = "Razorpay account ID is required")
+    @NotBlank(message = "Please enter your Razorpay Account ID.")
     private String razorpayAccountId;
     
-    @NotBlank(message = "Bank account number is required")
+    @NotBlank(message = "Please enter your bank account number.")
     private String bankAccountNumber;
     
-    @NotBlank(message = "Bank IFSC code is required")
+    @NotBlank(message = "Please enter your bank IFSC code.")
     private String bankIfscCode;
     
-    @NotBlank(message = "Bank account holder name is required")
+    @NotBlank(message = "Please enter the bank account holder's name.")
     private String bankAccountHolderName;
     
-    @Email(message = "Contact email must be valid")
-    @NotBlank(message = "Contact email is required")
+    @NotBlank(message = "Please enter a contact email for payments.")
     private String contactEmail;
 } 

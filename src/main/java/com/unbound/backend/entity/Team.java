@@ -12,7 +12,7 @@ import jakarta.persistence.*;
 public class Team {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Integer tid;
+    private Long tid;
 
     @ManyToOne
     @JoinColumn(name = "eid", referencedColumnName = "eid", nullable = false)

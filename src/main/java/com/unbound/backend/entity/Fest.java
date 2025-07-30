@@ -12,7 +12,7 @@ import jakarta.persistence.*;
 public class Fest {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Integer fid;
+    private Long fid;
 
     @ManyToOne
     @JoinColumn(name = "cid", referencedColumnName = "cid", nullable = false)

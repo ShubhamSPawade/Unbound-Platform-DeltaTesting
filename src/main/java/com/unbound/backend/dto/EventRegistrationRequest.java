@@ -7,11 +7,12 @@ import jakarta.validation.constraints.NotNull;
 
 @Data
 public class EventRegistrationRequest {
-    @NotNull(message = "Event ID is required")
-    private Integer eventId;
-    @NotBlank(message = "Registration type is required")
+    @NotNull(message = "Please select an event to register for.")
+    private Long eventId;
+    @NotNull(message = "Please select a registration type (Solo or Team).")
     private String registrationType; // "solo" or "team"
-    private Integer teamId; // for joining existing team
+    // For team registration
+    private Long teamId; // for joining existing team
     private String teamName; // for creating new team
     private List<Integer> memberIds; // for team registration (including self)
 } 

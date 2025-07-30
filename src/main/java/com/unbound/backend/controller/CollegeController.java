@@ -4,6 +4,8 @@ import com.unbound.backend.entity.College;
 import com.unbound.backend.entity.User;
 import com.unbound.backend.repository.CollegeRepository;
 import com.unbound.backend.dto.CollegePaymentConfigRequest;
+import com.unbound.backend.exception.CollegeNotFoundException;
+import com.unbound.backend.exception.ForbiddenActionException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -17,6 +19,8 @@ import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 
 import jakarta.validation.Valid;
 import java.util.Map;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 @RestController
 @RequestMapping("/api/college")
@@ -25,6 +29,8 @@ import java.util.Map;
 public class CollegeController {
     @Autowired
     private CollegeRepository collegeRepository;
+
+    private static final Logger logger = LoggerFactory.getLogger(CollegeController.class);
 
     @PostMapping("/payment-config")
     @Operation(summary = "Configure college payment settings", description = "Allows colleges to set up their payment receiving details")
@@ -35,13 +41,23 @@ public class CollegeController {
     })
     public ResponseEntity<?> configurePaymentSettings(@AuthenticationPrincipal User user, 
                                                    @Valid @RequestBody CollegePaymentConfigRequest request) {
+        logger.info("[POST] /api/college/payment-config called by user: {}", user != null ? user.getEmail() : "null");
         if (user == null || user.getRole() != User.Role.College) {
-            return ResponseEntity.status(403).body(Map.of("error", "Forbidden: Only colleges can configure payment settings"));
+            logger.error("User is null or not a college: {}", user);
+            throw new ForbiddenActionException("Only colleges can configure payment settings");
         }
-        
-        College college = collegeRepository.findByUser(user).orElse(null);
+        if (user.getUid() == null) {
+            logger.error("Authenticated user has null UID: {}", user);
+            throw new CollegeNotFoundException("Authenticated user has no UID. Please contact support.");
+        }
+        College college = collegeRepository.findByUserUid(user.getUid()).orElse(null);
         if (college == null) {
-            return ResponseEntity.status(404).body(Map.of("error", "College not found"));
+            logger.error("College not found for user: {} (uid={})", user.getEmail(), user.getUid());
+            throw new CollegeNotFoundException("College not found for the authenticated user. Please contact support.");
+        }
+        if (college.getUser() == null) {
+            logger.error("College entity has null user field: {}", college);
+            throw new CollegeNotFoundException("College record is missing user reference. Please contact support.");
         }
         
         // Update college payment configuration
@@ -52,6 +68,7 @@ public class CollegeController {
         college.setContactEmail(request.getContactEmail());
         
         collegeRepository.save(college);
+        logger.info("Payment configuration updated for college: {} (uid={})", college.getCname(), user.getUid());
         
         return ResponseEntity.ok(Map.of(
             "message", "Payment configuration updated successfully",
@@ -72,15 +89,26 @@ public class CollegeController {
         @ApiResponse(responseCode = "404", description = "College not found")
     })
     public ResponseEntity<?> getPaymentSettings(@AuthenticationPrincipal User user) {
+        logger.info("[GET] /api/college/payment-config called by user: {}", user != null ? user.getEmail() : "null");
         if (user == null || user.getRole() != User.Role.College) {
-            return ResponseEntity.status(403).body(Map.of("error", "Forbidden: Only colleges can view payment settings"));
+            logger.error("User is null or not a college: {}", user);
+            throw new ForbiddenActionException("Only colleges can view payment settings");
         }
-        
-        College college = collegeRepository.findByUser(user).orElse(null);
+        if (user.getUid() == null) {
+            logger.error("Authenticated user has null UID: {}", user);
+            throw new CollegeNotFoundException("Authenticated user has no UID. Please contact support.");
+        }
+        College college = collegeRepository.findByUserUid(user.getUid()).orElse(null);
         if (college == null) {
-            return ResponseEntity.status(404).body(Map.of("error", "College not found"));
+            logger.error("College not found for user: {} (uid={})", user.getEmail(), user.getUid());
+            throw new CollegeNotFoundException("College not found for the authenticated user. Please contact support.");
+        }
+        if (college.getUser() == null) {
+            logger.error("College entity has null user field: {}", college);
+            throw new CollegeNotFoundException("College record is missing user reference. Please contact support.");
         }
         
+        logger.info("Payment configuration fetched for college: {} (uid={})", college.getCname(), user.getUid());
         return ResponseEntity.ok(Map.of(
             "collegeName", college.getCname(),
             "razorpayAccountId", college.getRazorpayAccountId(),

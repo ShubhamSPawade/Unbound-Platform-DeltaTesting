@@ -17,9 +17,13 @@ import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 @Service
 public class PaymentService {
+    private static final Logger logger = LoggerFactory.getLogger(PaymentService.class);
+
     @Autowired
     private PaymentRepository paymentRepository;
 
@@ -29,14 +33,15 @@ public class PaymentService {
     @Autowired
     private EmailService emailService;
 
-    @Value("${razorpay.keyId}")
-    private String razorpayKeyId;
+    @Value("${razorpay.key}")
+    private String razorpayKey;
 
-    @Value("${razorpay.keySecret}")
-    private String razorpayKeySecret;
+    @Value("${razorpay.secret}")
+    private String razorpaySecret;
 
     public Order createOrder(EventRegistration registration, int amount, String currency, String receiptEmail) throws RazorpayException {
-        RazorpayClient client = new RazorpayClient(razorpayKeyId, razorpayKeySecret);
+        logger.info("[PAYMENT] Creating order for registrationId: {}, amount: {}, currency: {}", registration.getRid(), amount, currency);
+        RazorpayClient client = new RazorpayClient(razorpayKey, razorpaySecret);
         
         // Get the college that will receive the payment
         College college = registration.getEvent().getCollege();
@@ -69,10 +74,12 @@ public class PaymentService {
                 .college(college) // Track which college receives the payment
                 .build();
         paymentRepository.save(payment);
+        logger.info("[PAYMENT] Order created successfully for registrationId: {}", registration.getRid());
         return order;
     }
 
     public void updatePaymentStatus(String razorpayOrderId, String status, String paymentId) {
+        logger.info("[PAYMENT] Updating payment status for razorpayOrderId: {}, status: {}, paymentId: {}", razorpayOrderId, status, paymentId);
         Payment payment = paymentRepository.findAll().stream()
                 .filter(p -> p.getRazorpayOrderId().equals(razorpayOrderId))
                 .findFirst().orElse(null);
@@ -145,5 +152,6 @@ public class PaymentService {
                 }
             }
         }
+        logger.info("[PAYMENT] Payment status updated for razorpayOrderId: {}, status: {}, paymentId: {}", razorpayOrderId, status, paymentId);
     }
 } 

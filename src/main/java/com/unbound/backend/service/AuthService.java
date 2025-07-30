@@ -17,13 +17,19 @@ import org.springframework.beans.factory.annotation.Value;
 import com.unbound.backend.entity.PasswordResetToken;
 import com.unbound.backend.repository.PasswordResetTokenRepository;
 
-
+import jakarta.persistence.EntityNotFoundException;
+import com.unbound.backend.exception.EmailNotFoundException;
+import com.unbound.backend.exception.IncorrectPasswordException;
+import com.unbound.backend.exception.EmailAlreadyRegisteredException;
 
 import java.util.Optional;
 import java.time.LocalDateTime;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 @Service
 public class AuthService {
+    private static final Logger logger = LoggerFactory.getLogger(AuthService.class);
     @Autowired
     private UserRepository userRepository;
     @Autowired
@@ -37,8 +43,9 @@ public class AuthService {
 
     @Transactional
     public AuthResponse register(RegisterRequest request) {
+        logger.info("[REGISTER] Attempting to register user: {} with role: {}", request.getEmail(), request.getRole());
         if (userRepository.findByEmail(request.getEmail()).isPresent()) {
-            throw new RuntimeException("Email already registered");
+            throw new EmailAlreadyRegisteredException("This email is already registered. Please log in or use a different email.");
         }
         User.Role role = User.Role.valueOf(request.getRole());
         User user = User.builder()
@@ -50,15 +57,12 @@ public class AuthService {
         user = userRepository.save(user);
         String sname = null, cname = null;
         if (role == User.Role.Student) {
-            if (request.getCollegeId() == null) {
-                throw new RuntimeException("College ID is required for student registration");
-            }
-            College assignedCollege = collegeRepository.findById(request.getCollegeId())
-                .orElseThrow(() -> new RuntimeException("College not found for given collegeId"));
+            Long collegeId = request.getCollegeId();
+            College college = collegeRepository.findById(collegeId).orElseThrow(() -> new RuntimeException("College not found"));
             Student student = Student.builder()
-                    .user(user)
                     .sname(request.getSname())
-                    .college(assignedCollege)
+                    .user(user)
+                    .college(college)
                     .build();
             studentRepository.save(student);
             sname = student.getSname();
@@ -78,17 +82,18 @@ public class AuthService {
             // No additional entity creation needed
         }
         String token = jwtService.generateToken(user.getEmail(), user.getRole().name());
+        logger.info("[REGISTER] User registered successfully: {} with role: {}", user.getEmail(), user.getRole());
         return new AuthResponse(token, user.getRole().name(), user.getEmail(), sname, cname);
     }
 
     public AuthResponse login(LoginRequest request) {
-        Optional<User> userOpt = userRepository.findByEmail(request.getEmail());
-        if (userOpt.isEmpty()) {
-            throw new RuntimeException("Invalid credentials");
+        logger.info("[LOGIN] Attempting login for user: {}", request.getEmail());
+        User user = userRepository.findByEmail(request.getEmail()).orElse(null);
+        if (user == null) {
+            throw new EmailNotFoundException("Email not found");
         }
-        User user = userOpt.get();
         if (!passwordService.matches(request.getPassword(), user.getPassword())) {
-            throw new RuntimeException("Invalid credentials");
+            throw new IncorrectPasswordException("Incorrect password");
         }
         String sname = null, cname = null;
         if (user.getRole() == User.Role.Student) {
@@ -103,6 +108,7 @@ public class AuthService {
             if (college != null) cname = college.getCname();
         }
         String token = jwtService.generateToken(user.getEmail(), user.getRole().name());
+        logger.info("[LOGIN] Login successful for user: {}", user.getEmail());
         return new AuthResponse(token, user.getRole().name(), user.getEmail(), sname, cname);
     }
     
@@ -115,15 +121,19 @@ public class AuthService {
     @Autowired
     private EmailService emailService;
     
+    @Transactional
     public void sendResetPasswordLink(String email) {
+        logger.info("[FORGOT PASSWORD] Attempting to send reset link to: {}", email);
         Optional<User> userOpt = userRepository.findByEmail(email);
     
         if (userOpt.isEmpty()) {
-            throw new RuntimeException("Email not found");
+            throw new EmailNotFoundException("Email not found");
         }
     
         User user = userOpt.get();
     
+        // Delete any existing token for this user to avoid unique constraint violation
+        passwordResetTokenRepository.deleteByUser(user);
         String token = java.util.UUID.randomUUID().toString();
         PasswordResetToken resetToken = PasswordResetToken.builder()
                 .token(token)
@@ -138,6 +148,7 @@ public class AuthService {
         String body = "Hi,\n\nTo reset your password, please click the link below:\n" + resetLink + "\n\nIf you did not request this, ignore this email.";
     
         emailService.sendEmail(user.getEmail(), subject, body);
+        logger.info("[FORGOT PASSWORD] Reset link sent to: {}", email);
     }
 
     public void resetPassword(String token, String newPassword) {

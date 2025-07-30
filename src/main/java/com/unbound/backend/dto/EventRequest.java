@@ -8,6 +8,8 @@ import jakarta.validation.constraints.Email;
 
 @Data
 public class EventRequest {
+    private Long eid;
+    
     @NotBlank(message = "Event name is required")
     private String ename;
     
@@ -31,7 +33,7 @@ public class EventRequest {
     @NotNull(message = "Team allowed status is required")
     private Boolean teamIsAllowed = false;
     
-    private Integer festId; // Optional, for linking to a fest
+    private Long fid; // Optional, for linking to a fest
     
     private String category; // e.g., Technical, Cultural, Sports, etc.
     private String mode; // Online, Offline

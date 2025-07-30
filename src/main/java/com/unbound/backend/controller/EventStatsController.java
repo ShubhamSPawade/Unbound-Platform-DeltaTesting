@@ -5,9 +5,16 @@ import com.unbound.backend.entity.Fest;
 import com.unbound.backend.repository.EventRepository;
 import com.unbound.backend.repository.FestRepository;
 import com.unbound.backend.repository.EventRegistrationRepository;
+import com.unbound.backend.exception.EventNotFoundException;
+import com.unbound.backend.exception.ForbiddenActionException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.tags.Tag;
 
 import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
@@ -16,6 +23,7 @@ import java.util.Map;
 
 @RestController
 @RequestMapping("/api/events")
+@Tag(name = "Event Statistics APIs", description = "Public APIs for event statistics")
 public class EventStatsController {
     @Autowired
     private EventRepository eventRepository;
@@ -25,9 +33,15 @@ public class EventStatsController {
     private EventRegistrationRepository eventRegistrationRepository;
 
     @GetMapping("/{eventId}/stats")
-    public ResponseEntity<?> getEventStats(@PathVariable Integer eventId) {
+    @Operation(summary = "Get event statistics", description = "Retrieves statistics for a specific event. This is a public endpoint that does not require authentication.")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Event statistics retrieved successfully"),
+            @ApiResponse(responseCode = "404", description = "Event not found"),
+            @ApiResponse(responseCode = "400", description = "Invalid event date format")
+    })
+    public ResponseEntity<?> getEventStats(@PathVariable("eventId") Long eventId) {
         Event event = eventRepository.findById(eventId).orElse(null);
-        if (event == null) return ResponseEntity.status(404).body(Map.of("error", "Event not found"));
+        if (event == null) throw new EventNotFoundException("Event not found");
         int registrationCount = eventRegistrationRepository.findByEvent(event).size();
         String eventDate = event.getEventDate();
         LocalDate today = LocalDate.now();
@@ -35,15 +49,15 @@ public class EventStatsController {
         try {
             eventDay = LocalDate.parse(eventDate);
         } catch (Exception e) {
-            return ResponseEntity.badRequest().body(Map.of("error", "Invalid event date format"));
+            throw new ForbiddenActionException("Invalid event date format");
         }
-        long daysLeft = ChronoUnit.DAYS.between(today, eventDay);
         // Registration deadline: use fest endDate if linked, else event date
         String deadline = eventDay.toString();
         if (event.getFest() != null) {
             Fest fest = event.getFest();
             deadline = fest.getEndDate();
         }
+        long daysLeft = ChronoUnit.DAYS.between(today, eventDay);
         Map<String, Object> stats = new HashMap<>();
         stats.put("registrationCount", registrationCount);
         stats.put("daysLeft", daysLeft);

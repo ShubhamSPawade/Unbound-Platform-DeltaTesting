@@ -54,4 +54,13 @@ public class AuditService {
                 timestamp, userId, eventId, action);
         logger.info(logMessage);
     }
+
+    public void logAction(String action, String details) {
+        logger.info("[AUDIT] Logging action: {} with details: {}", action, details);
+        String timestamp = LocalDateTime.now().format(formatter);
+        String logMessage = String.format("[AUDIT] %s | Action: %s | Details: %s", 
+                timestamp, action, details);
+        logger.info(logMessage);
+        logger.info("[AUDIT] Action logged: {}", action);
+    }
 } 

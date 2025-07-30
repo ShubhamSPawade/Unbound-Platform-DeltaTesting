@@ -5,6 +5,8 @@ import com.unbound.backend.repository.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import java.util.*;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 @Service
 public class StudentDashboardService {
@@ -13,7 +15,10 @@ public class StudentDashboardService {
     @Autowired
     private EventReviewRepository eventReviewRepository;
 
+    private static final Logger logger = LoggerFactory.getLogger(StudentDashboardService.class);
+
     public List<Map<String, Object>> getMyRegistrations(Student student) {
+        logger.info("[STUDENT DASHBOARD] Fetching registrations for student: {}", student.getSname());
         List<EventRegistration> regs = eventRegistrationRepository.findByStudent(student);
         List<Map<String, Object>> result = new ArrayList<>();
         for (EventRegistration reg : regs) {
@@ -48,10 +53,12 @@ public class StudentDashboardService {
             }
             result.add(eventInfo);
         }
+        logger.info("[STUDENT DASHBOARD] Found {} registrations for student: {}", result.size(), student.getSname());
         return result;
     }
 
     public Map<String, Object> getStudentDashboardStats(Student student) {
+        logger.info("[STUDENT DASHBOARD] Fetching dashboard stats for student: {}", student.getSname());
         List<EventRegistration> regs = eventRegistrationRepository.findByStudent(student);
         int totalEvents = regs.size();
         long totalPaid = regs.stream().filter(r -> "paid".equalsIgnoreCase(r.getPaymentStatus())).count();
@@ -66,12 +73,14 @@ public class StudentDashboardService {
                 return java.time.LocalDate.parse(r.getEvent().getEventDate()).isBefore(java.time.LocalDate.now());
             } catch (Exception e) { throw new RuntimeException("Invalid event date format"); }
         }).count();
-        return Map.of(
+        Map<String, Object> stats = Map.of(
             "totalEvents", totalEvents,
             "totalPaid", totalPaid,
             "reviewsGiven", reviewsGiven,
             "upcomingEvents", upcoming,
             "pastEvents", past
         );
+        logger.info("[STUDENT DASHBOARD] Dashboard stats fetched for student: {}", student.getSname());
+        return stats;
     }
 } 

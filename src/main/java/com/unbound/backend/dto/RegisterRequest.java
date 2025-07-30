@@ -1,20 +1,24 @@
 package com.unbound.backend.dto;
 
 import lombok.Data;
+import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Size;
 
 @Data
 public class RegisterRequest {
-    @NotBlank(message = "Email is required")
+    @NotBlank(message = "Please enter your email address.")
+    @Email(message = "Please enter a valid email address.")
     private String email;
-    @NotBlank(message = "Password is required")
+    @NotBlank(message = "Please enter a password.")
+    @Size(min = 8, message = "Password must be at least 8 characters.")
     private String password;
-    @NotBlank(message = "Role is required")
+    @NotBlank(message = "Please select a role.")
     private String role; // "Student" or "College"
-    // Student fields
+    // For students
     private String sname;
-    private Integer collegeId; // NEW: for assigning college to student
-    // College fields
+    private Long collegeId;
+    // For colleges
     private String cname;
     private String cdescription;
     private String address;

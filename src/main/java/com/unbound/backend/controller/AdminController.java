@@ -16,6 +16,9 @@ import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 
 import java.util.*;
 import java.util.stream.Collectors;
+import com.unbound.backend.exception.ForbiddenActionException;
+import com.unbound.backend.exception.FestNotFoundException;
+import com.unbound.backend.exception.EventNotFoundException;
 
 @RestController
 @RequestMapping("/api/admin")
@@ -42,7 +45,7 @@ public class AdminController {
     })
     public ResponseEntity<?> getPendingFests(@AuthenticationPrincipal User user) {
         if (user == null || user.getRole() != User.Role.Admin) {
-            return ResponseEntity.status(403).body(Map.of("error", "Forbidden: Only admins can access this endpoint"));
+            throw new ForbiddenActionException("Only admins can access this endpoint");
         }
         List<Fest> pendingFests = festRepository.findAll().stream()
                 .filter(fest -> !fest.isApproved() && fest.isActive())
@@ -59,7 +62,7 @@ public class AdminController {
     })
     public ResponseEntity<?> getPendingEvents(@AuthenticationPrincipal User user) {
         if (user == null || user.getRole() != User.Role.Admin) {
-            return ResponseEntity.status(403).body(Map.of("error", "Forbidden: Only admins can access this endpoint"));
+            throw new ForbiddenActionException("Only admins can access this endpoint");
         }
         List<Event> pendingEvents = eventRepository.findAll().stream()
                 .filter(event -> !event.isApproved() && event.isActive())
@@ -74,13 +77,13 @@ public class AdminController {
         @ApiResponse(responseCode = "403", description = "Forbidden: Only admins can approve fests"),
         @ApiResponse(responseCode = "404", description = "Fest not found")
     })
-    public ResponseEntity<?> approveFest(@AuthenticationPrincipal User user, @PathVariable Integer festId) {
+    public ResponseEntity<?> approveFest(@AuthenticationPrincipal User user, @PathVariable Long festId) {
         if (user == null || user.getRole() != User.Role.Admin) {
-            return ResponseEntity.status(403).body(Map.of("error", "Forbidden: Only admins can approve fests"));
+            throw new ForbiddenActionException("Only admins can approve fests");
         }
         Fest fest = festRepository.findById(festId).orElse(null);
         if (fest == null) {
-            return ResponseEntity.status(404).body(Map.of("error", "Fest not found"));
+            throw new FestNotFoundException("Fest not found");
         }
         fest.setApproved(true);
         festRepository.save(fest);
@@ -94,13 +97,13 @@ public class AdminController {
         @ApiResponse(responseCode = "403", description = "Forbidden: Only admins can reject fests"),
         @ApiResponse(responseCode = "404", description = "Fest not found")
     })
-    public ResponseEntity<?> rejectFest(@AuthenticationPrincipal User user, @PathVariable Integer festId, @RequestBody Map<String, String> request) {
+    public ResponseEntity<?> rejectFest(@AuthenticationPrincipal User user, @PathVariable Long festId, @RequestBody Map<String, String> request) {
         if (user == null || user.getRole() != User.Role.Admin) {
-            return ResponseEntity.status(403).body(Map.of("error", "Forbidden: Only admins can reject fests"));
+            throw new ForbiddenActionException("Only admins can reject fests");
         }
         Fest fest = festRepository.findById(festId).orElse(null);
         if (fest == null) {
-            return ResponseEntity.status(404).body(Map.of("error", "Fest not found"));
+            throw new FestNotFoundException("Fest not found");
         }
         String reason = request.getOrDefault("reason", "No reason provided");
         fest.setActive(false);
@@ -115,13 +118,13 @@ public class AdminController {
         @ApiResponse(responseCode = "403", description = "Forbidden: Only admins can approve events"),
         @ApiResponse(responseCode = "404", description = "Event not found")
     })
-    public ResponseEntity<?> approveEvent(@AuthenticationPrincipal User user, @PathVariable Integer eventId) {
+    public ResponseEntity<?> approveEvent(@AuthenticationPrincipal User user, @PathVariable Long eventId) {
         if (user == null || user.getRole() != User.Role.Admin) {
-            return ResponseEntity.status(403).body(Map.of("error", "Forbidden: Only admins can approve events"));
+            throw new ForbiddenActionException("Only admins can approve events");
         }
         Event event = eventRepository.findById(eventId).orElse(null);
         if (event == null) {
-            return ResponseEntity.status(404).body(Map.of("error", "Event not found"));
+            throw new EventNotFoundException("Event not found");
         }
         event.setApproved(true);
         eventRepository.save(event);
@@ -135,13 +138,13 @@ public class AdminController {
         @ApiResponse(responseCode = "403", description = "Forbidden: Only admins can reject events"),
         @ApiResponse(responseCode = "404", description = "Event not found")
     })
-    public ResponseEntity<?> rejectEvent(@AuthenticationPrincipal User user, @PathVariable Integer eventId, @RequestBody Map<String, String> request) {
+    public ResponseEntity<?> rejectEvent(@AuthenticationPrincipal User user, @PathVariable Long eventId, @RequestBody Map<String, String> request) {
         if (user == null || user.getRole() != User.Role.Admin) {
-            return ResponseEntity.status(403).body(Map.of("error", "Forbidden: Only admins can reject events"));
+            throw new ForbiddenActionException("Only admins can reject events");
         }
         Event event = eventRepository.findById(eventId).orElse(null);
         if (event == null) {
-            return ResponseEntity.status(404).body(Map.of("error", "Event not found"));
+            throw new EventNotFoundException("Event not found");
         }
         String reason = request.getOrDefault("reason", "No reason provided");
         event.setActive(false);
@@ -157,7 +160,7 @@ public class AdminController {
     })
     public ResponseEntity<?> getAdminDashboardStats(@AuthenticationPrincipal User user) {
         if (user == null || user.getRole() != User.Role.Admin) {
-            return ResponseEntity.status(403).body(Map.of("error", "Forbidden: Only admins can access this endpoint"));
+            throw new ForbiddenActionException("Only admins can access this endpoint");
         }
         
         long totalColleges = collegeRepository.count();
@@ -193,7 +196,7 @@ public class AdminController {
     })
     public ResponseEntity<?> getAllColleges(@AuthenticationPrincipal User user) {
         if (user == null || user.getRole() != User.Role.Admin) {
-            return ResponseEntity.status(403).body(Map.of("error", "Forbidden: Only admins can access this endpoint"));
+            throw new ForbiddenActionException("Only admins can access this endpoint");
         }
         List<College> colleges = collegeRepository.findAll();
         return ResponseEntity.ok(colleges);

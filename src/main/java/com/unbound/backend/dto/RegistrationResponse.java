@@ -10,7 +10,9 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @NoArgsConstructor
 public class RegistrationResponse {
-    private Integer registrationId;
+    private Long registrationId;
+    private Long eventId;
+    private Long teamId;
     private String eventName;
     private String eventDate;
     private String eventLocation;

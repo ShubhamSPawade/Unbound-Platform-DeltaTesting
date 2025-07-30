@@ -18,12 +18,15 @@ import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import java.time.LocalDate;
 import java.util.*;
 import java.util.stream.Collectors;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 @RestController
 @RequestMapping("/api/college/dashboard")
 @Tag(name = "College Dashboard APIs", description = "APIs for college dashboard and analytics (College access required)")
 @SecurityRequirement(name = "bearerAuth")
 public class CollegeDashboardController {
+    private static final Logger logger = LoggerFactory.getLogger(CollegeDashboardController.class);
     @Autowired
     private CollegeRepository collegeRepository;
     @Autowired
@@ -40,9 +43,10 @@ public class CollegeDashboardController {
     private CollegeDashboardService collegeDashboardService;
 
     private College getCollegeForUser(User user) {
-        return collegeRepository.findAll().stream()
-                .filter(c -> c.getUser().getUid().equals(user.getUid()))
-                .findFirst().orElse(null);
+        if (user == null || user.getUid() == null) {
+            return null;
+        }
+        return collegeRepository.findByUserUid(user.getUid()).orElse(null);
     }
 
     @GetMapping("/earnings")
@@ -53,6 +57,7 @@ public class CollegeDashboardController {
             @ApiResponse(responseCode = "404", description = "College not found")
     })
     public ResponseEntity<?> getTotalEarnings(@AuthenticationPrincipal User user) {
+        logger.info("[GET] /api/college/dashboard/earnings called by user: {}", user != null ? user.getEmail() : "null");
         if (user == null || user.getRole() != User.Role.College) {
             return ResponseEntity.status(403).body(Map.of("error", "Only colleges can access this endpoint"));
         }
@@ -71,6 +76,7 @@ public class CollegeDashboardController {
                     .mapToInt(Payment::getAmount).sum();
             breakdown.put(event.getEname(), eventEarnings);
         }
+        logger.info("Total earnings calculated for college: {} (uid={})", college != null ? college.getCname() : "null", user != null ? user.getUid() : null);
         return ResponseEntity.ok(Map.of(
                 "totalEarnings", totalEarnings,
                 "breakdown", breakdown
@@ -221,14 +227,14 @@ public class CollegeDashboardController {
         ));
     }
 
-    @GetMapping("/events/{eventId}/registrations")
+    @GetMapping("/college/dashboard/events/{eventId}/registrations")
     @Operation(summary = "Get registrations for a specific event", description = "Retrieves all registrations for a specific event.")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Registrations retrieved successfully"),
             @ApiResponse(responseCode = "403", description = "Only colleges can view event registrations"),
             @ApiResponse(responseCode = "404", description = "Event not found or not owned by this college")
     })
-    public ResponseEntity<?> getEventRegistrations(@AuthenticationPrincipal User user, @PathVariable Integer eventId) {
+    public ResponseEntity<?> getEventRegistrations(@AuthenticationPrincipal User user, @PathVariable("eventId") Long eventId) {
         if (user == null || user.getRole() != User.Role.College) {
             return ResponseEntity.status(403).body(Map.of("error", "Only colleges can view event registrations"));
         }
@@ -275,14 +281,14 @@ public class CollegeDashboardController {
         return ResponseEntity.ok(response);
     }
 
-    @PostMapping("/events/{eventId}/registrations/{registrationId}/approve-certificate")
+    @PostMapping("/college/dashboard/events/{eventId}/registrations/{registrationId}/approve-certificate")
     @Operation(summary = "Approve a certificate for a specific registration", description = "Approves a certificate for a specific registration.")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Certificate approved successfully"),
             @ApiResponse(responseCode = "403", description = "Only colleges can approve certificates"),
             @ApiResponse(responseCode = "404", description = "Registration not found for this event or not owned by this college")
     })
-    public ResponseEntity<?> approveCertificate(@AuthenticationPrincipal User user, @PathVariable Integer eventId, @PathVariable Integer registrationId) {
+    public ResponseEntity<?> approveCertificate(@AuthenticationPrincipal User user, @PathVariable("eventId") Long eventId, @PathVariable("registrationId") Long registrationId) {
         if (user == null || user.getRole() != User.Role.College) {
             return ResponseEntity.status(403).body(Map.of("error", "Only colleges can approve certificates"));
         }
@@ -302,14 +308,14 @@ public class CollegeDashboardController {
         return ResponseEntity.ok(Map.of("message", "Certificate approved for registrationId " + registrationId));
     }
 
-    @PostMapping("/events/{eventId}/registrations/approve-all-certificates")
+    @PostMapping("/college/dashboard/events/{eventId}/registrations/approve-all-certificates")
     @Operation(summary = "Approve certificates for all registrations in an event", description = "Approves certificates for all registrations in a specific event.")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Certificates approved successfully"),
             @ApiResponse(responseCode = "403", description = "Only colleges can approve certificates"),
             @ApiResponse(responseCode = "404", description = "Event not found or not owned by this college")
     })
-    public ResponseEntity<?> approveAllCertificates(@AuthenticationPrincipal User user, @PathVariable Integer eventId) {
+    public ResponseEntity<?> approveAllCertificates(@AuthenticationPrincipal User user, @PathVariable("eventId") Long eventId) {
         if (user == null || user.getRole() != User.Role.College) {
             return ResponseEntity.status(403).body(Map.of("error", "Only colleges can approve certificates"));
         }
@@ -327,14 +333,14 @@ public class CollegeDashboardController {
         return ResponseEntity.ok(Map.of("message", "Certificates approved for all registrations in eventId " + eventId));
     }
 
-    @PostMapping("/events/{eventId}/registrations/approve-certificates")
+    @PostMapping("/college/dashboard/events/{eventId}/registrations/approve-certificates")
     @Operation(summary = "Approve certificates for a list of registrations", description = "Approves certificates for a list of specific registrations in an event.")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Certificates approved successfully"),
             @ApiResponse(responseCode = "403", description = "Only colleges can approve certificates"),
             @ApiResponse(responseCode = "404", description = "Event not found or not owned by this college")
     })
-    public ResponseEntity<?> approveCertificatesForList(@AuthenticationPrincipal User user, @PathVariable Integer eventId, @RequestBody Map<String, List<Integer>> req) {
+    public ResponseEntity<?> approveCertificatesForList(@AuthenticationPrincipal User user, @PathVariable("eventId") Long eventId, @RequestBody Map<String, List<Long>> req) {
         if (user == null || user.getRole() != User.Role.College) {
             return ResponseEntity.status(403).body(Map.of("error", "Only colleges can approve certificates"));
         }
@@ -344,9 +350,9 @@ public class CollegeDashboardController {
         if (event == null || !event.getCollege().getCid().equals(college.getCid())) {
             return ResponseEntity.status(404).body(Map.of("error", "Event not found or not owned by this college"));
         }
-        List<Integer> registrationIds = req.getOrDefault("registrationIds", List.of());
+        List<Long> registrationIds = req.getOrDefault("registrationIds", List.of());
         int approved = 0;
-        for (Integer regId : registrationIds) {
+        for (Long regId : registrationIds) {
             Optional<EventRegistration> regOpt = eventRegistrationRepository.findById(regId);
             if (regOpt.isPresent() && regOpt.get().getEvent().getEid().equals(eventId)) {
                 EventRegistration reg = regOpt.get();

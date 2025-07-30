@@ -10,7 +10,7 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @NoArgsConstructor
 public class EventResponse {
-    private Integer eid;
+    private Long eid;
     private String ename;
     private String edescription;
     private String eventDate;
@@ -22,7 +22,6 @@ public class EventResponse {
     private String mode;
     private String posterUrl;
     private String posterThumbnailUrl;
-    private boolean posterApproved;
     private boolean approved;
     private boolean active;
     

@@ -23,12 +23,21 @@ import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
 import java.util.*;
 import java.util.stream.Collectors;
+import com.unbound.backend.exception.CollegeNotFoundException;
+import com.unbound.backend.exception.EventNotFoundException;
+import com.unbound.backend.exception.EventNameExistsException;
+import com.unbound.backend.exception.InvalidFestForCollegeException;
+import com.unbound.backend.exception.EventDateOutOfRangeException;
+import com.unbound.backend.exception.ForbiddenActionException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 @RestController
 @RequestMapping("/api/events")
 @Tag(name = "Event Management APIs", description = "APIs for managing events (College access required)")
 @SecurityRequirement(name = "bearerAuth")
 public class EventController {
+    private static final Logger logger = LoggerFactory.getLogger(EventController.class);
     @Autowired
     private EventRepository eventRepository;
     @Autowired
@@ -54,12 +63,18 @@ public class EventController {
         @ApiResponse(responseCode = "404", description = "College not found")
     })
     public ResponseEntity<?> listEvents(@AuthenticationPrincipal User user) {
+        logger.info("[GET] /api/events called by user: {}", user != null ? user.getEmail() : "null");
         if (user == null || user.getRole() != User.Role.College) {
+            logger.warn("Unauthorized access attempt to /api/events by user: {}", user != null ? user.getEmail() : "null");
             return ResponseEntity.status(403).body(Map.of("error", "Forbidden: Only colleges can access this endpoint"));
         }
         College college = getCollegeForUser(user);
-        if (college == null) return ResponseEntity.notFound().build();
+        if (college == null) {
+            logger.error("College not found for user: {}", user != null ? user.getEmail() : "null");
+            return ResponseEntity.notFound().build();
+        }
         List<Event> events = eventRepository.findByCollege(college);
+        logger.info("Successfully retrieved {} events for college: {}", events.size(), college.getCname());
         
         List<EventResponse> responses = events.stream().map(event -> {
             int registrationCount = eventRegistrationRepository.findByEvent(event).size();
@@ -78,7 +93,6 @@ public class EventController {
                     .mode(event.getMode())
                     .posterUrl(event.getPosterUrl())
                     .posterThumbnailUrl(event.getPosterThumbnailUrl())
-                    .posterApproved(event.isPosterApproved())
                     .approved(event.isApproved())
                     .active(event.isActive())
                     .cashPrize(event.getCashPrize())
@@ -117,26 +131,34 @@ public class EventController {
         @ApiResponse(responseCode = "400", description = "Event name already exists for this college")
     })
     public ResponseEntity<?> createEvent(@AuthenticationPrincipal User user, @Valid @RequestBody EventRequest eventRequest) {
+        logger.info("[POST] /api/events called by user: {}", user != null ? user.getEmail() : "null");
         if (user == null || user.getRole() != User.Role.College) {
-            return ResponseEntity.status(403).body(Map.of("error", "Forbidden: Only colleges can access this endpoint"));
+            logger.warn("Unauthorized access attempt to /api/events by user: {}", user != null ? user.getEmail() : "null");
+            throw new ForbiddenActionException("Only colleges can access this endpoint");
         }
         College college = getCollegeForUser(user);
-        if (college == null) return ResponseEntity.notFound().build();
+        if (college == null) {
+            logger.error("College not found for user: {}", user != null ? user.getEmail() : "null");
+            throw new CollegeNotFoundException("College not found for this user.");
+        }
         // Duplicate name check
         boolean exists = eventRepository.findByCollege(college).stream()
                 .anyMatch(e -> e.getEname().equalsIgnoreCase(eventRequest.getEname()));
         if (exists) {
-            return ResponseEntity.badRequest().body(Map.of("error", "Event name already exists for this college"));
+            logger.warn("Event name already exists for college: {} with name: {}", college.getCname(), eventRequest.getEname());
+            throw new EventNameExistsException("Event name already exists for this college.");
         }
         // Fest linkage and event date validation
         Fest fest = null;
-        if (eventRequest.getFestId() != null) {
-            fest = festRepository.findById(eventRequest.getFestId()).orElse(null);
+        if (eventRequest.getFid() != null) {
+            fest = festRepository.findById(eventRequest.getFid()).orElse(null);
             if (fest == null || !fest.getCollege().getCid().equals(college.getCid())) {
-                return ResponseEntity.badRequest().body(Map.of("error", "Invalid fest for this college"));
+                logger.error("Invalid fest for college: {} with fest ID: {}", college.getCname(), eventRequest.getFid());
+                throw new InvalidFestForCollegeException("Invalid fest for this college.");
             }
             if (!isDateWithinRange(eventRequest.getEventDate(), fest.getStartDate(), fest.getEndDate())) {
-                return ResponseEntity.badRequest().body(Map.of("error", "Event date must be within fest date range"));
+                logger.error("Event date out of range for fest: {} with event date: {}", fest.getFname(), eventRequest.getEventDate());
+                throw new EventDateOutOfRangeException("Event date must be within fest date range.");
             }
         }
         Event event = Event.builder()
@@ -172,6 +194,7 @@ public class EventController {
                 .active(true)
                 .build();
         Event saved = eventRepository.save(event);
+        logger.info("Event created: {} for college: {}", event.getEname(), college.getCname());
         
         EventResponse response = EventResponse.builder()
                 .eid(saved.getEid())
@@ -186,7 +209,6 @@ public class EventController {
                 .mode(saved.getMode())
                 .posterUrl(saved.getPosterUrl())
                 .posterThumbnailUrl(saved.getPosterThumbnailUrl())
-                .posterApproved(saved.isPosterApproved())
                 .approved(saved.isApproved())
                 .active(saved.isActive())
                 .cashPrize(saved.getCashPrize())
@@ -222,31 +244,40 @@ public class EventController {
         @ApiResponse(responseCode = "403", description = "Forbidden: Only colleges can access this endpoint"),
         @ApiResponse(responseCode = "404", description = "Event not found or not owned by this college")
     })
-    public ResponseEntity<?> updateEvent(@AuthenticationPrincipal User user, @PathVariable Integer eid, @Valid @RequestBody EventRequest eventRequest) {
+    public ResponseEntity<?> updateEvent(@AuthenticationPrincipal User user, @PathVariable Long eid, @Valid @RequestBody EventRequest eventRequest) {
+        logger.info("[PUT] /api/events/{eid} called by user: {}", user != null ? user.getEmail() : "null");
         if (user == null || user.getRole() != User.Role.College) {
-            return ResponseEntity.status(403).body(Map.of("error", "Forbidden: Only colleges can access this endpoint"));
+            logger.warn("Unauthorized access attempt to /api/events/{eid} by user: {}", user != null ? user.getEmail() : "null");
+            throw new ForbiddenActionException("Only colleges can access this endpoint");
         }
         College college = getCollegeForUser(user);
-        if (college == null) return ResponseEntity.notFound().build();
+        if (college == null) {
+            logger.error("College not found for user: {}", user != null ? user.getEmail() : "null");
+            throw new CollegeNotFoundException("College not found for this user.");
+        }
         Event event = eventRepository.findById(eid).orElse(null);
         if (event == null || !event.getCollege().getCid().equals(college.getCid())) {
-            return ResponseEntity.status(404).body(Map.of("error", "Event not found or not owned by this college"));
+            logger.error("Event not found or not owned by this college for user: {}", user != null ? user.getEmail() : "null");
+            throw new EventNotFoundException("Event not found or not owned by this college");
         }
         // Duplicate name check (excluding self)
         boolean exists = eventRepository.findByCollege(college).stream()
                 .anyMatch(e -> !e.getEid().equals(eid) && e.getEname().equalsIgnoreCase(eventRequest.getEname()));
         if (exists) {
-            return ResponseEntity.badRequest().body(Map.of("error", "Event name already exists for this college"));
+            logger.warn("Event name already exists for college: {} with name: {}", college.getCname(), eventRequest.getEname());
+            throw new EventNameExistsException("Event name already exists for this college");
         }
         // Fest linkage and event date validation
         Fest fest = null;
-        if (eventRequest.getFestId() != null) {
-            fest = festRepository.findById(eventRequest.getFestId()).orElse(null);
+        if (eventRequest.getFid() != null) {
+            fest = festRepository.findById(eventRequest.getFid()).orElse(null);
             if (fest == null || !fest.getCollege().getCid().equals(college.getCid())) {
-                return ResponseEntity.badRequest().body(Map.of("error", "Invalid fest for this college"));
+                logger.error("Invalid fest for college: {} with fest ID: {}", college.getCname(), eventRequest.getFid());
+                throw new InvalidFestForCollegeException("Invalid fest for this college");
             }
             if (!isDateWithinRange(eventRequest.getEventDate(), fest.getStartDate(), fest.getEndDate())) {
-                return ResponseEntity.badRequest().body(Map.of("error", "Event date must be within fest date range"));
+                logger.error("Event date out of range for fest: {} with event date: {}", fest.getFname(), eventRequest.getEventDate());
+                throw new EventDateOutOfRangeException("Event date must be within fest date range");
             }
         }
         event.setFest(fest);
@@ -294,7 +325,6 @@ public class EventController {
                 .mode(event.getMode())
                 .posterUrl(event.getPosterUrl())
                 .posterThumbnailUrl(event.getPosterThumbnailUrl())
-                .posterApproved(event.isPosterApproved())
                 .approved(event.isApproved())
                 .active(event.isActive())
                 .cashPrize(event.getCashPrize())
@@ -330,17 +360,24 @@ public class EventController {
         @ApiResponse(responseCode = "403", description = "Forbidden: Only colleges can access this endpoint"),
         @ApiResponse(responseCode = "404", description = "Event not found or not owned by this college")
     })
-    public ResponseEntity<?> deleteEvent(@AuthenticationPrincipal User user, @PathVariable Integer eid) {
+    public ResponseEntity<?> deleteEvent(@AuthenticationPrincipal User user, @PathVariable Long eid) {
+        logger.info("[DELETE] /api/events/{eid} called by user: {}", user != null ? user.getEmail() : "null");
         if (user == null || user.getRole() != User.Role.College) {
+            logger.warn("Unauthorized access attempt to /api/events/{eid} by user: {}", user != null ? user.getEmail() : "null");
             return ResponseEntity.status(403).body(Map.of("error", "Forbidden: Only colleges can access this endpoint"));
         }
         College college = getCollegeForUser(user);
-        if (college == null) return ResponseEntity.notFound().build();
+        if (college == null) {
+            logger.error("College not found for user: {}", user != null ? user.getEmail() : "null");
+            return ResponseEntity.notFound().build();
+        }
         Event event = eventRepository.findById(eid).orElse(null);
         if (event == null || !event.getCollege().getCid().equals(college.getCid())) {
+            logger.error("Event not found or not owned by this college for user: {}", user != null ? user.getEmail() : "null");
             return ResponseEntity.status(404).body(Map.of("error", "Event not found or not owned by this college"));
         }
         eventRepository.delete(event);
+        logger.info("Event deleted: {}", eid);
         return ResponseEntity.ok(Map.of("message", "Event deleted successfully"));
     }
 
@@ -352,17 +389,23 @@ public class EventController {
         @ApiResponse(responseCode = "404", description = "Event not found or not owned by this college")
     })
     public ResponseEntity<?> uploadEventPoster(@AuthenticationPrincipal User user, 
-                                             @PathVariable Integer eid, 
+                                             @PathVariable Long eid, 
                                              @RequestParam("file") MultipartFile file) {
+        logger.info("[POST] /api/events/{eid}/poster called by user: {}", user != null ? user.getEmail() : "null");
         if (user == null || user.getRole() != User.Role.College) {
+            logger.warn("Unauthorized access attempt to /api/events/{eid}/poster by user: {}", user != null ? user.getEmail() : "null");
             return ResponseEntity.status(403).body(Map.of("error", "Forbidden: Only colleges can upload event posters"));
         }
         
         College college = getCollegeForUser(user);
-        if (college == null) return ResponseEntity.notFound().build();
+        if (college == null) {
+            logger.error("College not found for user: {}", user != null ? user.getEmail() : "null");
+            return ResponseEntity.notFound().build();
+        }
         
         Event event = eventRepository.findById(eid).orElse(null);
         if (event == null || !event.getCollege().getCid().equals(college.getCid())) {
+            logger.error("Event not found or not owned by this college for user: {}", user != null ? user.getEmail() : "null");
             return ResponseEntity.status(404).body(Map.of("error", "Event not found or not owned by this college"));
         }
         
@@ -379,9 +422,9 @@ public class EventController {
             // Update event
             event.setPosterUrl(posterUrl);
             event.setPosterThumbnailUrl(posterThumbnailUrl);
-            event.setPosterApproved(false); // Needs college approval
             eventRepository.save(event);
             
+            logger.info("Event poster uploaded: {}", eid);
             return ResponseEntity.ok(Map.of(
                 "message", "Event poster uploaded successfully",
                 "posterUrl", posterUrl,
@@ -389,54 +432,12 @@ public class EventController {
             ));
             
         } catch (IllegalArgumentException e) {
+            logger.error("Invalid file upload for event poster: {}", e.getMessage());
             return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
         } catch (Exception e) {
+            logger.error("Failed to upload poster for event: {}", e.getMessage());
             return ResponseEntity.status(500).body(Map.of("error", "Failed to upload poster: " + e.getMessage()));
         }
-    }
-
-    @PostMapping("/{eid}/poster/approve")
-    @Operation(summary = "Approve event poster")
-    @ApiResponses(value = {
-        @ApiResponse(responseCode = "200", description = "Poster approved successfully"),
-        @ApiResponse(responseCode = "403", description = "Forbidden: Only colleges can approve posters"),
-        @ApiResponse(responseCode = "404", description = "Event not found or not owned by this college")
-    })
-    public ResponseEntity<?> approveEventPoster(@AuthenticationPrincipal User user, @PathVariable Integer eid) {
-        if (user == null || user.getRole() != User.Role.College) {
-            return ResponseEntity.status(403).body(Map.of("error", "Forbidden: Only colleges can approve posters"));
-        }
-        College college = getCollegeForUser(user);
-        if (college == null) return ResponseEntity.notFound().build();
-        Event event = eventRepository.findById(eid).orElse(null);
-        if (event == null || !event.getCollege().getCid().equals(college.getCid())) {
-            return ResponseEntity.status(404).body(Map.of("error", "Event not found or not owned by this college"));
-        }
-        event.setPosterApproved(true);
-        eventRepository.save(event);
-        return ResponseEntity.ok(Map.of("message", "Poster approved successfully"));
-    }
-
-    @PostMapping("/{eid}/poster/reject")
-    @Operation(summary = "Reject event poster")
-    @ApiResponses(value = {
-        @ApiResponse(responseCode = "200", description = "Poster rejected"),
-        @ApiResponse(responseCode = "403", description = "Forbidden: Only colleges can reject posters"),
-        @ApiResponse(responseCode = "404", description = "Event not found or not owned by this college")
-    })
-    public ResponseEntity<?> rejectEventPoster(@AuthenticationPrincipal User user, @PathVariable Integer eid, @RequestParam String reason) {
-        if (user == null || user.getRole() != User.Role.College) {
-            return ResponseEntity.status(403).body(Map.of("error", "Forbidden: Only colleges can reject posters"));
-        }
-        College college = getCollegeForUser(user);
-        if (college == null) return ResponseEntity.notFound().build();
-        Event event = eventRepository.findById(eid).orElse(null);
-        if (event == null || !event.getCollege().getCid().equals(college.getCid())) {
-            return ResponseEntity.status(404).body(Map.of("error", "Event not found or not owned by this college"));
-        }
-        event.setPosterApproved(false);
-        eventRepository.save(event);
-        return ResponseEntity.ok(Map.of("message", "Poster rejected", "reason", reason));
     }
 
     @DeleteMapping("/{eid}/poster")
@@ -446,20 +447,26 @@ public class EventController {
         @ApiResponse(responseCode = "403", description = "Forbidden: Only colleges can delete posters"),
         @ApiResponse(responseCode = "404", description = "Event not found or not owned by this college")
     })
-    public ResponseEntity<?> deleteEventPoster(@AuthenticationPrincipal User user, @PathVariable Integer eid) {
+    public ResponseEntity<?> deleteEventPoster(@AuthenticationPrincipal User user, @PathVariable Long eid) {
+        logger.info("[DELETE] /api/events/{eid}/poster called by user: {}", user != null ? user.getEmail() : "null");
         if (user == null || user.getRole() != User.Role.College) {
+            logger.warn("Unauthorized access attempt to /api/events/{eid}/poster by user: {}", user != null ? user.getEmail() : "null");
             return ResponseEntity.status(403).body(Map.of("error", "Forbidden: Only colleges can delete posters"));
         }
         College college = getCollegeForUser(user);
-        if (college == null) return ResponseEntity.notFound().build();
+        if (college == null) {
+            logger.error("College not found for user: {}", user != null ? user.getEmail() : "null");
+            return ResponseEntity.notFound().build();
+        }
         Event event = eventRepository.findById(eid).orElse(null);
         if (event == null || !event.getCollege().getCid().equals(college.getCid())) {
+            logger.error("Event not found or not owned by this college for user: {}", user != null ? user.getEmail() : "null");
             return ResponseEntity.status(404).body(Map.of("error", "Event not found or not owned by this college"));
         }
         event.setPosterUrl(null);
         event.setPosterThumbnailUrl(null);
-        event.setPosterApproved(false);
         eventRepository.save(event);
+        logger.info("Event poster deleted: {}", eid);
         return ResponseEntity.ok(Map.of("message", "Poster deleted successfully"));
     }
 
@@ -470,21 +477,27 @@ public class EventController {
         @ApiResponse(responseCode = "403", description = "Forbidden: Only colleges can view audit logs"),
         @ApiResponse(responseCode = "404", description = "Event not found or not owned by this college")
     })
-    public ResponseEntity<?> getEventPosterAuditLogs(@AuthenticationPrincipal User user, @PathVariable Integer eid) {
+    public ResponseEntity<?> getEventPosterAuditLogs(@AuthenticationPrincipal User user, @PathVariable Long eid) {
+        logger.info("[GET] /api/events/{eid}/poster/audit-logs called by user: {}", user != null ? user.getEmail() : "null");
         if (user == null || user.getRole() != User.Role.College) {
+            logger.warn("Unauthorized access attempt to /api/events/{eid}/poster/audit-logs by user: {}", user != null ? user.getEmail() : "null");
             return ResponseEntity.status(403).body(Map.of("error", "Forbidden: Only colleges can view audit logs"));
         }
         College college = getCollegeForUser(user);
-        if (college == null) return ResponseEntity.notFound().build();
+        if (college == null) {
+            logger.error("College not found for user: {}", user != null ? user.getEmail() : "null");
+            return ResponseEntity.notFound().build();
+        }
         Event event = eventRepository.findById(eid).orElse(null);
         if (event == null || !event.getCollege().getCid().equals(college.getCid())) {
+            logger.error("Event not found or not owned by this college for user: {}", user != null ? user.getEmail() : "null");
             return ResponseEntity.status(404).body(Map.of("error", "Event not found or not owned by this college"));
         }
         // Return audit log information
+        logger.info("Successfully retrieved audit logs for event poster: {}", eid);
         return ResponseEntity.ok(Map.of(
             "eventId", eid,
             "posterUrl", event.getPosterUrl(),
-            "posterApproved", event.isPosterApproved(),
             "lastUpdated", System.currentTimeMillis()
         ));
     }
@@ -496,6 +509,7 @@ public class EventController {
             LocalDate end = LocalDate.parse(endDate);
             return !event.isBefore(start) && !event.isAfter(end);
         } catch (Exception e) {
+            logger.error("Error parsing date range for event: {}", e.getMessage());
             return false;
         }
     }
